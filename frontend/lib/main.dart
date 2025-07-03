@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/task_screen.dart';
 import 'screens/project_screen.dart';
+import 'services/logging_service.dart';
 
 void main() {
+  LoggingService.setup();
   runApp(const MyApp());
 }
 
