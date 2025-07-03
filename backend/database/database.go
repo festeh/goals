@@ -1,24 +1,30 @@
 package database
 
 import (
-	"context"
-
-	"github.com/jackc/pgx/v5"
+	"os"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func CreateTables(conn *pgx.Conn) error {
-	_, err := conn.Exec(context.Background(), `
-		CREATE TABLE IF NOT EXISTS projects (
-			id SERIAL PRIMARY KEY,
-			name TEXT NOT NULL
-		);
-		CREATE TABLE IF NOT EXISTS tasks (
-			id SERIAL PRIMARY KEY,
-			description TEXT NOT NULL,
-			project_id INTEGER REFERENCES projects(id),
-			due_date TIMESTAMPTZ,
-			labels TEXT[]
-		);
-	`)
-	return err
+var DB *gorm.DB
+
+func InitDB() error {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		panic("DATABASE_URL environment variable is not set")
+	}
+	
+	var err error
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	if err != nil {
+		return err
+	}
+
+	// Auto-migrate the schema
+	err = DB.AutoMigrate(&Project{}, &Task{})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
