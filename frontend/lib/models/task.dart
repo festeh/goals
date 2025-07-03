@@ -1,0 +1,35 @@
+class Task {
+  final int? id;
+  final String description;
+  final int projectId;
+  final DateTime dueDate;
+  final List<String> labels;
+
+  Task({
+    this.id,
+    required this.description,
+    required this.projectId,
+    required this.dueDate,
+    required this.labels,
+  });
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    return Task(
+      id: json['id'],
+      description: json['description'],
+      projectId: json['project_id'],
+      dueDate: DateTime.parse(json['due_date']),
+      labels: List<String>.from(json['labels'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'description': description,
+      'project_id': projectId,
+      'due_date': dueDate.toIso8601String(),
+      'labels': labels,
+    };
+  }
+}
