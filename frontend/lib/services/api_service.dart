@@ -87,7 +87,7 @@ class ApiService {
       final response = await http.get(Uri.parse('$baseUrl/projects'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        _logger.info('Projects fetched successfully.');
+        _logger.info('Projects fetched successfully. data: $data');
         return data.map((json) => Project.fromJson(json)).toList();
       } else {
         _logger.warning('Failed to load projects: ${response.statusCode}');

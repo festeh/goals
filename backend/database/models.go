@@ -19,10 +19,9 @@ type Task struct {
 }
 
 type Project struct {
-	ID        uint           `gorm:"primaryKey"`
-	Name      string         `gorm:"not null"`
-	Tasks     []Task         `gorm:"foreignKey:ProjectID"`
+	ID        uint      `gorm:"primaryKey"`
+	Name      string    `gorm:"not null"`
+	Tasks     []Task    `gorm:"foreignKey:ProjectID"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
