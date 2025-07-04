@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/models/project.dart';
+import 'package:frontend/widgets/edit_project_dialog.dart';
 import 'widgets/add_project_dialog.dart';
 import 'widgets/project_list_widget.dart';
 import 'services/caching_service.dart';
@@ -73,6 +75,35 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void _showEditProjectDialog(Project project) {
+    showDialog(
+      context: context,
+      builder: (context) => EditProjectDialog(
+        project: project,
+        onProjectUpdated: () {
+          setState(() {});
+        },
+      ),
+    );
+  }
+
+  Future<void> _deleteProject(int id) async {
+    try {
+      await ApiService.deleteProject(id);
+      setState(() {
+        if (_cachingService.projects.isNotEmpty) {
+          _selectedIndex = 0;
+        } else {
+          _selectedIndex = -1;
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting project: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,10 +146,13 @@ class _MainScreenState extends State<MainScreen> {
                         final project =
                             _cachingService.projects.removeAt(oldIndex);
                         _cachingService.projects.insert(newIndex, project);
-                        ApiService.reorderProjects(
-                            _cachingService.projects.map((p) => p.id!).toList());
+                        ApiService.reorderProjects(_cachingService.projects
+                            .map((p) => p.id!)
+                            .toList());
                       });
                     },
+                    onEdit: _showEditProjectDialog,
+                    onDelete: _deleteProject,
                   ),
               ],
             ),
@@ -128,8 +162,9 @@ class _MainScreenState extends State<MainScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : _cachingService.projects.isEmpty
-                ? Center(child: Text('No projects'))
-                : TaskScreen(project: _cachingService.projects[_selectedIndex]),
+                    ? Center(child: Text('No projects'))
+                    : TaskScreen(
+                        project: _cachingService.projects[_selectedIndex]),
           ),
         ],
       ),
