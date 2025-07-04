@@ -74,7 +74,7 @@ func main() {
 
 func listTasks(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Listing tasks").Send()
-	
+
 	var tasks []database.Task
 	result := database.DB.Preload("Project").Find(&tasks)
 	if result.Error != nil {
@@ -89,7 +89,7 @@ func listTasks(w http.ResponseWriter, r *http.Request) {
 
 func createTask(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Creating new task").Send()
-	
+
 	var t database.Task
 	err := json.NewDecoder(r.Body).Decode(&t)
 	if err != nil {
@@ -112,7 +112,7 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 func updateTask(w http.ResponseWriter, r *http.Request) {
 	taskID := chi.URLParam(r, "taskID")
 	logger.Info("Updating task").Str("task_id", taskID).Send()
-	
+
 	id, err := strconv.ParseUint(taskID, 10, 32)
 	if err != nil {
 		logger.Error("Invalid task ID").Str("task_id", taskID).Err(err).Send()
@@ -142,7 +142,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 func deleteTask(w http.ResponseWriter, r *http.Request) {
 	taskID := chi.URLParam(r, "taskID")
 	logger.Info("Deleting task").Str("task_id", taskID).Send()
-	
+
 	id, err := strconv.ParseUint(taskID, 10, 32)
 	if err != nil {
 		logger.Error("Invalid task ID").Str("task_id", taskID).Err(err).Send()
@@ -163,7 +163,7 @@ func deleteTask(w http.ResponseWriter, r *http.Request) {
 
 func listProjects(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Listing projects").Send()
-	
+
 	var projects []database.Project
 	result := database.DB.Preload("Tasks").Find(&projects)
 	if result.Error != nil {
@@ -178,7 +178,7 @@ func listProjects(w http.ResponseWriter, r *http.Request) {
 
 func createProject(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Creating new project").Send()
-	
+
 	var p database.Project
 	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
@@ -201,7 +201,7 @@ func createProject(w http.ResponseWriter, r *http.Request) {
 func updateProject(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "projectID")
 	logger.Info("Updating project").Str("project_id", projectID).Send()
-	
+
 	id, err := strconv.ParseUint(projectID, 10, 32)
 	if err != nil {
 		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
@@ -231,7 +231,7 @@ func updateProject(w http.ResponseWriter, r *http.Request) {
 func deleteProject(w http.ResponseWriter, r *http.Request) {
 	projectID := chi.URLParam(r, "projectID")
 	logger.Info("Deleting project").Str("project_id", projectID).Send()
-	
+
 	id, err := strconv.ParseUint(projectID, 10, 32)
 	if err != nil {
 		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
