@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -59,9 +60,11 @@ func main() {
 	r.Route("/projects", func(r chi.Router) {
 		r.Get("/", listProjects)
 		r.Post("/", createProject)
+		r.Put("/reorder", reorderProjects)
 		r.Route("/{projectID}", func(r chi.Router) {
 			r.Put("/", updateProject)
 			r.Delete("/", deleteProject)
+			r.Put("/tasks/reorder", reorderTasks)
 		})
 	})
 
@@ -261,5 +264,72 @@ func deleteProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("Successfully deleted project").Uint("project_id", uint(id)).Send()
+	w.WriteHeader(http.StatusOK)
+}
+
+func updateOrderBatch(model any, ids []uint, whereClause string, whereArgs ...any) error {
+	for i, id := range ids {
+		var result *gorm.DB
+		if whereClause != "" {
+			result = database.DB.Model(model).Where("id = ? AND "+whereClause, append([]any{id}, whereArgs...)...).Update("order", i+1)
+		} else {
+			result = database.DB.Model(model).Where("id = ?", id).Update("order", i+1)
+		}
+		if result.Error != nil {
+			return result.Error
+		}
+	}
+	return nil
+}
+
+func reorderProjects(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Reordering projects").Send()
+
+	var projectIDs []uint
+	err := json.NewDecoder(r.Body).Decode(&projectIDs)
+	if err != nil {
+		logger.Error("Failed to decode project IDs").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = updateOrderBatch(&database.Project{}, projectIDs, "", nil)
+	if err != nil {
+		logger.Error("Failed to reorder projects").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully reordered projects").Int("count", len(projectIDs)).Send()
+	w.WriteHeader(http.StatusOK)
+}
+
+func reorderTasks(w http.ResponseWriter, r *http.Request) {
+	projectID := chi.URLParam(r, "projectID")
+	logger.Info("Reordering tasks for project").Str("project_id", projectID).Send()
+
+	id, err := strconv.ParseUint(projectID, 10, 32)
+	if err != nil {
+		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
+		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+		return
+	}
+
+	var taskIDs []uint
+	err = json.NewDecoder(r.Body).Decode(&taskIDs)
+	if err != nil {
+		logger.Error("Failed to decode task IDs").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = updateOrderBatch(&database.Task{}, taskIDs, "project_id = ?", uint(id))
+	if err != nil {
+		logger.Error("Failed to reorder tasks").Uint("project_id", uint(id)).Err(err).Send()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully reordered tasks").Uint("project_id", uint(id)).Int("count", len(taskIDs)).Send()
 	w.WriteHeader(http.StatusOK)
 }

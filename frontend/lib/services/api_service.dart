@@ -175,4 +175,23 @@ class ApiService {
       rethrow;
     }
   }
+
+  static Future<void> reorderProjects(List<int> projectIds) async {
+    _logger.info('Reordering projects...');
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/projects/reorder'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'project_ids': projectIds}),
+      );
+      if (response.statusCode != 200) {
+        _logger.warning('Failed to reorder projects: ${response.statusCode}');
+        throw Exception('Failed to reorder projects');
+      }
+      _logger.info('Projects reordered successfully.');
+    } catch (e) {
+      _logger.severe('Error reordering projects: $e');
+      rethrow;
+    }
+  }
 }

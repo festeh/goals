@@ -107,6 +107,18 @@ class _MainScreenState extends State<MainScreen> {
                         _selectedIndex = index;
                       });
                     },
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        if (newIndex > oldIndex) {
+                          newIndex -= 1;
+                        }
+                        final project =
+                            _cachingService.projects.removeAt(oldIndex);
+                        _cachingService.projects.insert(newIndex, project);
+                        ApiService.reorderProjects(
+                            _cachingService.projects.map((p) => p.id!).toList());
+                      });
+                    },
                   ),
               ],
             ),
