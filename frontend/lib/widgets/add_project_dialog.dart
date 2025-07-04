@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/services/caching_service.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
 import '../utils/color_utils.dart';
@@ -15,8 +16,8 @@ class AddProjectDialog extends StatefulWidget {
 class _AddProjectDialogState extends State<AddProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _orderController = TextEditingController();
   String? _selectedColor;
+  final CachingService _cachingService = CachingService();
 
   @override
   void initState() {
@@ -39,20 +40,6 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter a project name';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              controller: _orderController,
-              decoration: InputDecoration(labelText: 'Order'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an order';
-                }
-                if (int.tryParse(value) == null) {
-                  return 'Please enter a valid number';
                 }
                 return null;
               },
@@ -99,10 +86,16 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               try {
+                final newOrder = (_cachingService.projects.isNotEmpty
+                        ? _cachingService.projects
+                            .map((p) => p.order)
+                            .reduce((a, b) => a > b ? a : b)
+                        : 0) +
+                    1;
                 final project = Project(
                   name: _nameController.text,
                   color: _selectedColor!,
-                  order: int.parse(_orderController.text),
+                  order: newOrder,
                 );
                 await ApiService.createProject(project);
                 Navigator.of(context).pop();

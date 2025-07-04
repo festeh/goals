@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 const Map<String, Color> colorMap = {
+  'gray': Colors.grey,
   'Grey': Colors.grey,
   'Red': Colors.red,
   'Pink': Colors.pink,

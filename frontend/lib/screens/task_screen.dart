@@ -111,6 +111,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   final _labelsController = TextEditingController();
   int? _selectedProjectId;
   DateTime _selectedDate = DateTime.now();
+  final CachingService _cachingService = CachingService();
 
   @override
   Widget build(BuildContext context) {
@@ -172,8 +173,8 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         });
                       }
                     },
-                    child: Text(
-                        _selectedDate.toLocal().toString().split(' ')[0]),
+                    child:
+                        Text(_selectedDate.toLocal().toString().split(' ')[0]),
                   ),
                 ],
               ),
@@ -204,11 +205,22 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     .where((s) => s.isNotEmpty)
                     .toList();
 
+                final tasksForProject = _cachingService.tasks
+                    .where((task) => task.projectId == _selectedProjectId)
+                    .toList();
+                final newOrder = (tasksForProject.isNotEmpty
+                        ? tasksForProject
+                            .map((t) => t.order)
+                            .reduce((a, b) => a > b ? a : b)
+                        : 0) +
+                    1;
+
                 final task = Task(
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
                   dueDate: _selectedDate,
                   labels: labels,
+                  order: newOrder,
                 );
 
                 await ApiService.createTask(task);
