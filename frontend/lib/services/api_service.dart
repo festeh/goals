@@ -2,20 +2,28 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
 import '../models/project.dart';
+import 'caching_service.dart';
 import 'logging_service.dart';
 
 class ApiService {
   static const String baseUrl = 'http://localhost:3000';
   static final _logger = LoggingService.logger;
+  static final CachingService _cachingService = CachingService();
 
   static Future<List<Task>> getTasks() async {
     _logger.info('Fetching tasks...');
+    if (_cachingService.tasks.isNotEmpty) {
+      _logger.info('Tasks loaded from cache.');
+      return _cachingService.tasks;
+    }
     try {
       final response = await http.get(Uri.parse('$baseUrl/tasks'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         _logger.info('Tasks fetched successfully.');
-        return data.map((json) => Task.fromJson(json)).toList();
+        final tasks = data.map((json) => Task.fromJson(json)).toList();
+        _cachingService.setTasks(tasks);
+        return tasks;
       } else {
         _logger.warning('Failed to load tasks: ${response.statusCode}');
         throw Exception('Failed to load tasks');
@@ -36,7 +44,9 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         _logger.info('Task created successfully.');
-        return Task.fromJson(json.decode(response.body));
+        final newTask = Task.fromJson(json.decode(response.body));
+        _cachingService.addTask(newTask);
+        return newTask;
       } else {
         _logger.warning('Failed to create task: ${response.statusCode}');
         throw Exception('Failed to create task');
@@ -59,6 +69,7 @@ class ApiService {
         _logger.warning('Failed to update task $id: ${response.statusCode}');
         throw Exception('Failed to update task');
       }
+      _cachingService.updateTask(task);
       _logger.info('Task $id updated successfully.');
     } catch (e) {
       _logger.severe('Error updating task $id: $e');
@@ -74,6 +85,7 @@ class ApiService {
         _logger.warning('Failed to delete task $id: ${response.statusCode}');
         throw Exception('Failed to delete task');
       }
+      _cachingService.deleteTask(id);
       _logger.info('Task $id deleted successfully.');
     } catch (e) {
       _logger.severe('Error deleting task $id: $e');
@@ -83,12 +95,18 @@ class ApiService {
 
   static Future<List<Project>> getProjects() async {
     _logger.info('Fetching projects...');
+    if (_cachingService.projects.isNotEmpty) {
+      _logger.info('Projects loaded from cache.');
+      return _cachingService.projects;
+    }
     try {
       final response = await http.get(Uri.parse('$baseUrl/projects'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
         _logger.info('Projects fetched successfully. data: $data');
-        return data.map((json) => Project.fromJson(json)).toList();
+        final projects = data.map((json) => Project.fromJson(json)).toList();
+        _cachingService.setProjects(projects);
+        return projects;
       } else {
         _logger.warning('Failed to load projects: ${response.statusCode}');
         throw Exception('Failed to load projects');
@@ -109,7 +127,9 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         _logger.info('Project created successfully.');
-        return Project.fromJson(json.decode(response.body));
+        final newProject = Project.fromJson(json.decode(response.body));
+        _cachingService.addProject(newProject);
+        return newProject;
       } else {
         _logger.warning('Failed to create project: ${response.statusCode}');
         throw Exception('Failed to create project');
@@ -132,6 +152,7 @@ class ApiService {
         _logger.warning('Failed to update project $id: ${response.statusCode}');
         throw Exception('Failed to update project');
       }
+      _cachingService.updateProject(project);
       _logger.info('Project $id updated successfully.');
     } catch (e) {
       _logger.severe('Error updating project $id: $e');
@@ -147,6 +168,7 @@ class ApiService {
         _logger.warning('Failed to delete project $id: ${response.statusCode}');
         throw Exception('Failed to delete project');
       }
+      _cachingService.deleteProject(id);
       _logger.info('Project $id deleted successfully.');
     } catch (e) {
       _logger.severe('Error deleting project $id: $e');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/task_screen.dart';
 import 'screens/project_screen.dart';
+import 'services/api_service.dart';
 import 'services/logging_service.dart';
 
 void main() {
@@ -33,11 +34,35 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  bool _isLoading = true;
 
   final List<Widget> _screens = [
     TaskScreen(),
     ProjectScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      await ApiService.getProjects();
+      await ApiService.getTasks();
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading initial data: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +90,9 @@ class _MainScreenState extends State<MainScreen> {
           ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
-            child: _screens[_selectedIndex],
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _screens[_selectedIndex],
           ),
         ],
       ),

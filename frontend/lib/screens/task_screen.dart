@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
+import '../services/caching_service.dart';
 
 class TaskScreen extends StatefulWidget {
   @override
@@ -9,41 +10,12 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
-  List<Task> tasks = [];
-  List<Project> projects = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    try {
-      final tasksFuture = ApiService.getTasks();
-      final projectsFuture = ApiService.getProjects();
-      
-      tasks = await tasksFuture;
-      projects = await projectsFuture;
-      
-      setState(() {
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
-      );
-    }
-  }
+  final CachingService _cachingService = CachingService();
 
   Future<void> _deleteTask(int id) async {
     try {
       await ApiService.deleteTask(id);
-      await _loadData();
+      setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting task: $e')),
@@ -55,15 +27,17 @@ class _TaskScreenState extends State<TaskScreen> {
     showDialog(
       context: context,
       builder: (context) => AddTaskDialog(
-        projects: projects,
-        onTaskAdded: _loadData,
+        projects: _cachingService.projects,
+        onTaskAdded: () {
+          setState(() {});
+        },
       ),
     );
   }
 
   String _getProjectName(int projectId) {
     try {
-      return projects.firstWhere((p) => p.id == projectId).name;
+      return _cachingService.projects.firstWhere((p) => p.id == projectId).name;
     } catch (e) {
       return 'Unknown Project';
     }
@@ -76,39 +50,40 @@ class _TaskScreenState extends State<TaskScreen> {
         title: Text('Tasks'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: tasks.length,
-              itemBuilder: (context, index) {
-                final task = tasks[index];
-                return Card(
-                  margin: EdgeInsets.all(8.0),
-                  child: ListTile(
-                    title: Text(task.description),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Project: ${_getProjectName(task.projectId)}'),
-                        Text('Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
-                        if (task.labels.isNotEmpty)
-                          Wrap(
-                            spacing: 4.0,
-                            children: task.labels.map((label) => Chip(
-                              label: Text(label),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            )).toList(),
-                          ),
-                      ],
+      body: ListView.builder(
+        itemCount: _cachingService.tasks.length,
+        itemBuilder: (context, index) {
+          final task = _cachingService.tasks[index];
+          return Card(
+            margin: EdgeInsets.all(8.0),
+            child: ListTile(
+              title: Text(task.description),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Project: ${_getProjectName(task.projectId)}'),
+                  Text('Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
+                  if (task.labels.isNotEmpty)
+                    Wrap(
+                      spacing: 4.0,
+                      children: task.labels
+                          .map((label) => Chip(
+                                label: Text(label),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ))
+                          .toList(),
                     ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _deleteTask(task.id!),
-                    ),
-                  ),
-                );
-              },
+                ],
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () => _deleteTask(task.id!),
+              ),
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
         tooltip: 'Add Task',
@@ -195,7 +170,8 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         });
                       }
                     },
-                    child: Text(_selectedDate.toLocal().toString().split(' ')[0]),
+                    child: Text(
+                        _selectedDate.toLocal().toString().split(' ')[0]),
                   ),
                 ],
               ),
@@ -225,14 +201,14 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     .map((s) => s.trim())
                     .where((s) => s.isNotEmpty)
                     .toList();
-                
+
                 final task = Task(
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
                   dueDate: _selectedDate,
                   labels: labels,
                 );
-                
+
                 await ApiService.createTask(task);
                 Navigator.of(context).pop();
                 widget.onTaskAdded();

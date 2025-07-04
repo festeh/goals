@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
+import '../services/caching_service.dart';
 
 class ProjectScreen extends StatefulWidget {
   @override
@@ -8,35 +9,12 @@ class ProjectScreen extends StatefulWidget {
 }
 
 class _ProjectScreenState extends State<ProjectScreen> {
-  List<Project> projects = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProjects();
-  }
-
-  Future<void> _loadProjects() async {
-    try {
-      projects = await ApiService.getProjects();
-      setState(() {
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading projects: $e')),
-      );
-    }
-  }
+  final CachingService _cachingService = CachingService();
 
   Future<void> _deleteProject(int id) async {
     try {
       await ApiService.deleteProject(id);
-      await _loadProjects();
+      setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error deleting project: $e')),
@@ -47,7 +25,9 @@ class _ProjectScreenState extends State<ProjectScreen> {
   void _showAddProjectDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddProjectDialog(onProjectAdded: _loadProjects),
+      builder: (context) => AddProjectDialog(onProjectAdded: () {
+        setState(() {});
+      }),
     );
   }
 
@@ -58,24 +38,22 @@ class _ProjectScreenState extends State<ProjectScreen> {
         title: Text('Projects'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: projects.length,
-              itemBuilder: (context, index) {
-                final project = projects[index];
-                return Card(
-                  margin: EdgeInsets.all(8.0),
-                  child: ListTile(
-                    title: Text(project.name),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () => _deleteProject(project.id!),
-                    ),
-                  ),
-                );
-              },
+      body: ListView.builder(
+        itemCount: _cachingService.projects.length,
+        itemBuilder: (context, index) {
+          final project = _cachingService.projects[index];
+          return Card(
+            margin: EdgeInsets.all(8.0),
+            child: ListTile(
+              title: Text(project.name),
+              trailing: IconButton(
+                icon: Icon(Icons.delete),
+                onPressed: () => _deleteProject(project.id!),
+              ),
             ),
+          );
+        },
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddProjectDialog,
         tooltip: 'Add Project',
