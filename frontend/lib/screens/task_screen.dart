@@ -70,58 +70,119 @@ class _TaskScreenState extends State<TaskScreen> {
   Widget build(BuildContext context) {
     if (widget.project == null) {
       return Scaffold(
-        appBar: AppBar(
-          title: Text('No Project Selected'),
-          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        ),
         body: Center(
-          child: Text('Please select a project to see the tasks.'),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.folder_special, size: 64),
+              const SizedBox(height: 16),
+              Text(
+                'No Project Selected',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please select a project to see the tasks.',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
+          ),
         ),
       );
     }
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tasks for ${widget.project!.name}'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          'Tasks for ${widget.project!.name}',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: ListView.builder(
-        itemCount: _tasksForProject.length,
-        itemBuilder: (context, index) {
-          final task = _tasksForProject[index];
-          return Card(
-            margin: EdgeInsets.all(8.0),
-            child: ListTile(
-              title: Text(task.description),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: _tasksForProject.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  const Icon(Icons.check_circle_outline, size: 64),
+                  const SizedBox(height: 16),
                   Text(
-                      'Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
-                  if (task.labels.isNotEmpty)
-                    Wrap(
-                      spacing: 4.0,
-                      children: task.labels
-                          .map((label) => Chip(
-                                label: Text(label),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                              ))
-                          .toList(),
-                    ),
+                    'No tasks yet!',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Click the "+" button to add your first task.',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                 ],
               ),
-              trailing: IconButton(
-                icon: Icon(Icons.delete),
-                onPressed: () => _deleteTask(task.id!),
-              ),
+            )
+          : ListView.builder(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: _tasksForProject.length,
+              itemBuilder: (context, index) {
+                final task = _tasksForProject[index];
+                return Card(
+                  elevation: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(16.0),
+                    title: Text(
+                      task.description,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              'Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
+                          if (task.labels.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Wrap(
+                                spacing: 8.0,
+                                runSpacing: 4.0,
+                                children: task.labels
+                                    .map((label) => Chip(
+                                          label: Text(label),
+                                          backgroundColor: Theme.of(context)
+                                              .colorScheme
+                                              .secondary
+                                              .withOpacity(0.2),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            side: BorderSide(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .secondary,
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () => _deleteTask(task.id!),
+                    ),
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddTaskDialog,
         tooltip: 'Add Task',
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -148,7 +209,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text('Add New Task'),
+      title: const Text('Add New Task'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -157,7 +218,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
             children: [
               TextFormField(
                 controller: _descriptionController,
-                decoration: InputDecoration(labelText: 'Description'),
+                decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter a description';
@@ -165,10 +226,10 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _selectedProjectId,
-                decoration: InputDecoration(labelText: 'Project'),
+                decoration: const InputDecoration(labelText: 'Project'),
                 items: widget.projects.map((project) {
                   return DropdownMenuItem<int>(
                     value: project.id,
@@ -187,17 +248,17 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                   return null;
                 },
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Row(
                 children: [
-                  Text('Due Date: '),
+                  const Text('Due Date: '),
                   TextButton(
                     onPressed: () async {
                       final date = await showDatePicker(
                         context: context,
                         initialDate: _selectedDate,
                         firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(Duration(days: 365)),
+                        lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (date != null) {
                         setState(() {
@@ -210,10 +271,10 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                   ),
                 ],
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _labelsController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Labels (comma-separated)',
                   hintText: 'urgent, work, personal',
                 ),
@@ -225,7 +286,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel'),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () async {
@@ -275,7 +336,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
               }
             }
           },
-          child: Text('Add'),
+          child: const Text('Add'),
         ),
       ],
     );

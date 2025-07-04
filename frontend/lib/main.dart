@@ -22,8 +22,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My Goals',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        brightness: Brightness.dark,
+        primaryColor: const Color(0xFF6200EE),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6200EE),
+          brightness: Brightness.dark,
+          secondary: const Color(0xFF03DAC6),
+        ),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        cardColor: const Color(0xFF1E1E1E),
         useMaterial3: true,
+        textTheme: const TextTheme(
+          headlineSmall: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          bodyLarge: TextStyle(fontSize: 16, color: Colors.white70),
+          bodyMedium: TextStyle(fontSize: 14, color: Colors.white60),
+        ),
       ),
       home: const MainScreen(),
     );
@@ -124,64 +141,90 @@ class _MainScreenState extends State<MainScreen> {
       body: Row(
         children: [
           SizedBox(
-            width: 200,
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'My Projects',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add),
-                        onPressed: _showAddProjectDialog,
-                      ),
-                    ],
+            width: 250,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                border: Border(
+                  right: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
                   ),
                 ),
-                if (_cachingService.projects.isNotEmpty)
-                  ProjectList(
-                    projects: _cachingService.projects,
-                    selectedIndex: _selectedIndex,
-                    onProjectSelected: (index) {
-                      setState(() {
-                        _selectedIndex = index;
-                      });
-                    },
-                    onReorder: (oldIndex, newIndex) async {
-                      setState(() {
-                        if (newIndex > oldIndex) {
-                          newIndex -= 1;
-                        }
-                        final project =
-                            _cachingService.projects.removeAt(oldIndex);
-                        _cachingService.projects.insert(newIndex, project);
-                      });
-                      try {
-                        await ApiService.reorderProjects(_cachingService
-                            .projects
-                            .map((p) => p.id!)
-                            .toList());
-                      } catch (e) {
-                        _showErrorDialog('Error reordering projects: $e');
-                      }
-                    },
-                    onEdit: _showEditProjectDialog,
-                    onDelete: _deleteProject,
+              ),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'My Projects',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline),
+                          onPressed: _showAddProjectDialog,
+                        ),
+                      ],
+                    ),
                   ),
-              ],
+                  if (_cachingService.projects.isNotEmpty)
+                    ProjectList(
+                      projects: _cachingService.projects,
+                      selectedIndex: _selectedIndex,
+                      onProjectSelected: (index) {
+                        setState(() {
+                          _selectedIndex = index;
+                        });
+                      },
+                      onReorder: (oldIndex, newIndex) async {
+                        setState(() {
+                          if (newIndex > oldIndex) {
+                            newIndex -= 1;
+                          }
+                          final project =
+                              _cachingService.projects.removeAt(oldIndex);
+                          _cachingService.projects.insert(newIndex, project);
+                        });
+                        try {
+                          await ApiService.reorderProjects(_cachingService
+                              .projects
+                              .map((p) => p.id!)
+                              .toList());
+                        } catch (e) {
+                          _showErrorDialog('Error reordering projects: $e');
+                        }
+                      },
+                      onEdit: _showEditProjectDialog,
+                      onDelete: _deleteProject,
+                    ),
+                ],
+              ),
             ),
           ),
-          const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: _isLoading
-                ? Center(child: CircularProgressIndicator())
+                ? const Center(child: CircularProgressIndicator())
                 : _cachingService.projects.isEmpty
-                    ? Center(child: Text('No projects'))
+                    ? Center(
+                        child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.folder_open, size: 64),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No projects yet!',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Click the "+" button to add your first project.',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ],
+                      ))
                     : TaskScreen(
                         project: _cachingService.projects.isNotEmpty
                             ? _cachingService.projects[_selectedIndex]
