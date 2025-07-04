@@ -4,6 +4,7 @@ class Task {
   final int projectId;
   final DateTime dueDate;
   final List<String> labels;
+  final int order;
 
   Task({
     this.id,
@@ -11,6 +12,7 @@ class Task {
     required this.projectId,
     required this.dueDate,
     required this.labels,
+    required this.order,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -20,6 +22,7 @@ class Task {
       projectId: json['project_id'],
       dueDate: DateTime.parse(json['due_date']),
       labels: List<String>.from(json['labels'] ?? []),
+      order: json['order'],
     );
   }
 
@@ -30,6 +33,7 @@ class Task {
       'project_id': projectId,
       'due_date': dueDate.toIso8601String(),
       'labels': labels,
+      'order': order,
     };
   }
 }

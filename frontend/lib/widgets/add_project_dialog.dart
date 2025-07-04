@@ -15,6 +15,7 @@ class AddProjectDialog extends StatefulWidget {
 class _AddProjectDialogState extends State<AddProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _orderController = TextEditingController();
   String? _selectedColor;
 
   @override
@@ -38,6 +39,20 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
               validator: (value) {
                 if (value == null || value.isEmpty) {
                   return 'Please enter a project name';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _orderController,
+              decoration: InputDecoration(labelText: 'Order'),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter an order';
+                }
+                if (int.tryParse(value) == null) {
+                  return 'Please enter a valid number';
                 }
                 return null;
               },
@@ -87,6 +102,7 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
                 final project = Project(
                   name: _nameController.text,
                   color: _selectedColor!,
+                  order: int.parse(_orderController.text),
                 );
                 await ApiService.createProject(project);
                 Navigator.of(context).pop();
