@@ -68,6 +68,7 @@ func InitDB() error {
 			inboxProject = Project{
 				Name:  "Inbox",
 				Color: "gray",
+				Order: 1,
 			}
 			if err := DB.Create(&inboxProject).Error; err != nil {
 				logger.Error("Failed to create Inbox project").Err(err).Send()

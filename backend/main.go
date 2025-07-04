@@ -98,6 +98,13 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set order if not provided
+	if t.Order == 0 {
+		var maxOrder int
+		database.DB.Model(&database.Task{}).Select("COALESCE(MAX(order), 0)").Where("project_id = ?", t.ProjectID).Scan(&maxOrder)
+		t.Order = maxOrder + 1
+	}
+
 	result := database.DB.Create(&t)
 	if result.Error != nil {
 		logger.Error("Failed to create task").Err(result.Error).Str("description", t.Description).Send()
@@ -185,6 +192,13 @@ func createProject(w http.ResponseWriter, r *http.Request) {
 		logger.Error("Failed to decode project request").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	// Set order if not provided
+	if p.Order == 0 {
+		var maxOrder int
+		database.DB.Model(&database.Project{}).Select("COALESCE(MAX(order), 0)").Scan(&maxOrder)
+		p.Order = maxOrder + 1
 	}
 
 	result := database.DB.Create(&p)
