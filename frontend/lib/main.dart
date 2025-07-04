@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'services/caching_service.dart';
 import 'screens/task_screen.dart';
-import 'screens/project_screen.dart';
 import 'services/api_service.dart';
 import 'services/logging_service.dart';
 
@@ -33,13 +33,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+  final CachingService _cachingService = CachingService();
   int _selectedIndex = 0;
   bool _isLoading = true;
-
-  final List<Widget> _screens = [
-    TaskScreen(),
-    ProjectScreen(),
-  ];
 
   @override
   void initState() {
@@ -69,33 +65,35 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       body: Row(
         children: [
-          NavigationRail(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _selectedIndex = index;
-              });
-            },
-            labelType: NavigationRailLabelType.all,
-            destinations: [
-              NavigationRailDestination(
-                icon: Icon(Icons.task),
-                label: Text('Tasks'),
-              ),
-              NavigationRailDestination(
-                icon: Icon(Icons.folder),
-                label: Text('Projects'),
-              ),
-            ],
-          ),
+          if (_cachingService.projects.isNotEmpty)
+            NavigationRail(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              labelType: NavigationRailLabelType.all,
+              destinations: _cachingService.projects.map((project) {
+                return NavigationRailDestination(
+                  icon: Icon(Icons.folder),
+                  label: Text(project.name),
+                );
+              }).toList(),
+            ),
           const VerticalDivider(thickness: 1, width: 1),
           Expanded(
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
-                : _screens[_selectedIndex],
+                : _cachingService.projects.isEmpty
+                    ? Center(child: Text('No projects'))
+                    : TaskScreen(
+                        project: _cachingService.projects[_selectedIndex],
+                      ),
           ),
         ],
       ),
     );
   }
 }
+

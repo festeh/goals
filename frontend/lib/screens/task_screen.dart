@@ -5,12 +5,22 @@ import '../services/api_service.dart';
 import '../services/caching_service.dart';
 
 class TaskScreen extends StatefulWidget {
+  final Project project;
+
+  TaskScreen({required this.project});
+
   @override
   _TaskScreenState createState() => _TaskScreenState();
 }
 
 class _TaskScreenState extends State<TaskScreen> {
   final CachingService _cachingService = CachingService();
+
+  List<Task> get _tasksForProject {
+    return _cachingService.tasks
+        .where((task) => task.projectId == widget.project.id)
+        .toList();
+  }
 
   Future<void> _deleteTask(int id) async {
     try {
@@ -35,25 +45,17 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
-  String _getProjectName(int projectId) {
-    try {
-      return _cachingService.projects.firstWhere((p) => p.id == projectId).name;
-    } catch (e) {
-      return 'Unknown Project';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tasks'),
+        title: Text('Tasks for ${widget.project.name}'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: ListView.builder(
-        itemCount: _cachingService.tasks.length,
+        itemCount: _tasksForProject.length,
         itemBuilder: (context, index) {
-          final task = _cachingService.tasks[index];
+          final task = _tasksForProject[index];
           return Card(
             margin: EdgeInsets.all(8.0),
             child: ListTile(
@@ -61,8 +63,8 @@ class _TaskScreenState extends State<TaskScreen> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Project: ${_getProjectName(task.projectId)}'),
-                  Text('Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
+                  Text(
+                      'Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
                   if (task.labels.isNotEmpty)
                     Wrap(
                       spacing: 4.0,
@@ -225,3 +227,4 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
     );
   }
 }
+
