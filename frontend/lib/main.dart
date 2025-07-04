@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/models/project.dart';
 import 'package:frontend/widgets/edit_project_dialog.dart';
+import 'package:frontend/widgets/error_dialog.dart';
 import 'widgets/add_project_dialog.dart';
 import 'widgets/project_list_widget.dart';
 import 'services/caching_service.dart';
@@ -47,6 +48,23 @@ class _MainScreenState extends State<MainScreen> {
     _loadInitialData();
   }
 
+  Future<void> _sync() async {
+    setState(() {
+      _isLoading = true;
+    });
+    await _loadInitialData();
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => ErrorDialog(
+        error: error,
+        onSync: _sync,
+      ),
+    );
+  }
+
   Future<void> _loadInitialData() async {
     try {
       await ApiService.getProjects();
@@ -58,9 +76,7 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading initial data: $e')));
+      _showErrorDialog('Error loading initial data: $e');
     }
   }
 
@@ -98,9 +114,7 @@ class _MainScreenState extends State<MainScreen> {
         }
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting project: $e')),
-      );
+      _showErrorDialog('Error deleting project: $e');
     }
   }
 
@@ -138,7 +152,7 @@ class _MainScreenState extends State<MainScreen> {
                         _selectedIndex = index;
                       });
                     },
-                    onReorder: (oldIndex, newIndex) {
+                    onReorder: (oldIndex, newIndex) async {
                       setState(() {
                         if (newIndex > oldIndex) {
                           newIndex -= 1;
@@ -146,10 +160,15 @@ class _MainScreenState extends State<MainScreen> {
                         final project =
                             _cachingService.projects.removeAt(oldIndex);
                         _cachingService.projects.insert(newIndex, project);
-                        ApiService.reorderProjects(_cachingService.projects
+                      });
+                      try {
+                        await ApiService.reorderProjects(_cachingService
+                            .projects
                             .map((p) => p.id!)
                             .toList());
-                      });
+                      } catch (e) {
+                        _showErrorDialog('Error reordering projects: $e');
+                      }
                     },
                     onEdit: _showEditProjectDialog,
                     onDelete: _deleteProject,
@@ -164,7 +183,9 @@ class _MainScreenState extends State<MainScreen> {
                 : _cachingService.projects.isEmpty
                     ? Center(child: Text('No projects'))
                     : TaskScreen(
-                        project: _cachingService.projects[_selectedIndex]),
+                        project: _cachingService.projects.isNotEmpty
+                            ? _cachingService.projects[_selectedIndex]
+                            : null),
           ),
         ],
       ),

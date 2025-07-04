@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/widgets/error_dialog.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
 import '../services/caching_service.dart';
 
 class TaskScreen extends StatefulWidget {
-  final Project project;
+  final Project? project;
 
   TaskScreen({required this.project});
 
@@ -17,9 +18,31 @@ class _TaskScreenState extends State<TaskScreen> {
   final CachingService _cachingService = CachingService();
 
   List<Task> get _tasksForProject {
+    if (widget.project == null) {
+      return [];
+    }
     return _cachingService.tasks
-        .where((task) => task.projectId == widget.project.id)
+        .where((task) => task.projectId == widget.project!.id)
         .toList();
+  }
+
+  Future<void> _sync() async {
+    try {
+      await ApiService.getTasks();
+      setState(() {});
+    } catch (e) {
+      _showErrorDialog('Error syncing tasks: $e');
+    }
+  }
+
+  void _showErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (context) => ErrorDialog(
+        error: error,
+        onSync: _sync,
+      ),
+    );
   }
 
   Future<void> _deleteTask(int id) async {
@@ -27,9 +50,7 @@ class _TaskScreenState extends State<TaskScreen> {
       await ApiService.deleteTask(id);
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error deleting task: $e')),
-      );
+      _showErrorDialog('Error deleting task: $e');
     }
   }
 
@@ -47,9 +68,20 @@ class _TaskScreenState extends State<TaskScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.project == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('No Project Selected'),
+          backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        ),
+        body: Center(
+          child: Text('Please select a project to see the tasks.'),
+        ),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tasks for ${widget.project.name}'),
+        title: Text('Tasks for ${widget.project!.name}'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: ListView.builder(
@@ -227,8 +259,18 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 Navigator.of(context).pop();
                 widget.onTaskAdded();
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error creating task: $e')),
+                showDialog(
+                  context: context,
+                  builder: (context) => ErrorDialog(
+                    error: 'Error creating task: $e',
+                    onSync: () async {
+                      try {
+                        await ApiService.getTasks();
+                      } catch (e) {
+                        // ignore
+                      }
+                    },
+                  ),
                 );
               }
             }
