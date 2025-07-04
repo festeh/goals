@@ -7,21 +7,21 @@ import (
 )
 
 type Task struct {
-	ID          uint           `gorm:"primaryKey"`
-	Description string         `gorm:"not null"`
-	ProjectID   *uint          `gorm:"index"`
-	Project     *Project       `gorm:"foreignKey:ProjectID"`
-	DueDate     *time.Time
-	Labels      pq.StringArray `gorm:"type:text[]"`
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	DeletedAt   gorm.DeletedAt `gorm:"index"`
+	ID          uint           `gorm:"primaryKey" json:"id"`
+	Description string         `gorm:"not null" json:"description"`
+	ProjectID   *uint          `gorm:"index" json:"project_id"`
+	Project     *Project       `gorm:"foreignKey:ProjectID" json:"project"`
+	DueDate     *time.Time     `json:"due_date"`
+	Labels      pq.StringArray `gorm:"type:text[]" json:"labels"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
 type Project struct {
-	ID        uint      `gorm:"primaryKey"`
-	Name      string    `gorm:"not null"`
-	Tasks     []Task    `gorm:"foreignKey:ProjectID"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Name      string    `gorm:"not null" json:"name"`
+	Tasks     []Task    `gorm:"foreignKey:ProjectID" json:"tasks"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
