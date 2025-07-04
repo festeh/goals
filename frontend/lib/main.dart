@@ -55,18 +55,20 @@ class _MainScreenState extends State<MainScreen> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading initial data: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading initial data: $e')));
     }
   }
 
   void _showAddProjectDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddProjectDialog(onProjectAdded: () {
-        setState(() {});
-      }),
+      builder: (context) => AddProjectDialog(
+        onProjectAdded: () {
+          setState(() {});
+        },
+      ),
     );
   }
 
@@ -84,8 +86,10 @@ class _MainScreenState extends State<MainScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('My Projects',
-                          style: Theme.of(context).textTheme.headlineSmall),
+                      Text(
+                        'My Projects',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
                       IconButton(
                         icon: Icon(Icons.add),
                         onPressed: _showAddProjectDialog,
@@ -95,21 +99,24 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 if (_cachingService.projects.isNotEmpty)
                   Expanded(
-                    child: NavigationRail(
-                      selectedIndex: _selectedIndex,
-                      onDestinationSelected: (index) {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
-                      },
-                      labelType: NavigationRailLabelType.all,
-                      destinations:
-                          _cachingService.projects.map((project) {
-                        return NavigationRailDestination(
-                          icon: Icon(Icons.folder),
-                          label: Text(project.name),
+                    child: ListView.builder(
+                      itemCount: _cachingService.projects.length,
+                      itemBuilder: (context, index) {
+                        final project = _cachingService.projects[index];
+                        return ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: _getColor(project.color),
+                            radius: 10,
+                          ),
+                          title: Text(project.name),
+                          selected: _selectedIndex == index,
+                          onTap: () {
+                            setState(() {
+                              _selectedIndex = index;
+                            });
+                          },
                         );
-                      }).toList(),
+                      },
                     ),
                   ),
               ],
@@ -120,14 +127,43 @@ class _MainScreenState extends State<MainScreen> {
             child: _isLoading
                 ? Center(child: CircularProgressIndicator())
                 : _cachingService.projects.isEmpty
-                    ? Center(child: Text('No projects'))
-                    : TaskScreen(
-                        project: _cachingService.projects[_selectedIndex],
-                      ),
+                ? Center(child: Text('No projects'))
+                : TaskScreen(project: _cachingService.projects[_selectedIndex]),
           ),
         ],
       ),
     );
+  }
+}
+
+Color _getColor(String colorStr) {
+  switch (colorStr.toLowerCase()) {
+    case 'red':
+      return Colors.red;
+    case 'pink':
+      return Colors.pink;
+    case 'purple':
+      return Colors.purple;
+    case 'deep purple':
+      return Colors.deepPurple;
+    case 'indigo':
+      return Colors.indigo;
+    case 'blue':
+      return Colors.blue;
+    case 'teal':
+      return Colors.teal;
+    case 'green':
+      return Colors.green;
+    case 'yellow':
+      return Colors.yellow;
+    case 'orange':
+      return Colors.orange;
+    case 'brown':
+      return Colors.brown;
+    case 'grey':
+      return Colors.grey;
+    default:
+      return Colors.transparent;
   }
 }
 
@@ -143,6 +179,28 @@ class AddProjectDialog extends StatefulWidget {
 class _AddProjectDialogState extends State<AddProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  String? _selectedColor;
+
+  final Map<String, Color> _colorMap = {
+    'Grey': Colors.grey,
+    'Red': Colors.red,
+    'Pink': Colors.pink,
+    'Purple': Colors.purple,
+    'Deep Purple': Colors.deepPurple,
+    'Indigo': Colors.indigo,
+    'Blue': Colors.blue,
+    'Teal': Colors.teal,
+    'Green': Colors.green,
+    'Yellow': Colors.yellow,
+    'Orange': Colors.orange,
+    'Brown': Colors.brown,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedColor = _colorMap.keys.first;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,15 +208,50 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
       title: Text('Add New Project'),
       content: Form(
         key: _formKey,
-        child: TextFormField(
-          controller: _nameController,
-          decoration: InputDecoration(labelText: 'Project Name'),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please enter a project name';
-            }
-            return null;
-          },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Project Name'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a project name';
+                }
+                return null;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              value: _selectedColor,
+              decoration: InputDecoration(labelText: 'Color'),
+              items: _colorMap.keys.map((String colorName) {
+                return DropdownMenuItem<String>(
+                  value: colorName,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: _colorMap[colorName],
+                        radius: 10,
+                      ),
+                      SizedBox(width: 10),
+                      Text(colorName),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedColor = newValue;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a color';
+                }
+                return null;
+              },
+            ),
+          ],
         ),
       ),
       actions: [
@@ -170,7 +263,10 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               try {
-                final project = Project(name: _nameController.text);
+                final project = Project(
+                  name: _nameController.text,
+                  color: _selectedColor!,
+                );
                 await ApiService.createProject(project);
                 Navigator.of(context).pop();
                 widget.onProjectAdded();
@@ -187,4 +283,3 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
     );
   }
 }
-
