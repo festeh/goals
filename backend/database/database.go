@@ -35,5 +35,29 @@ func InitDB() error {
 	}
 
 	logger.Info("Database migrations completed successfully").Send()
+
+	// Ensure Inbox project exists
+	var inboxProject Project
+	result := DB.Where("name = ?", "Inbox").First(&inboxProject)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.Info("Creating default Inbox project").Send()
+			inboxProject = Project{
+				Name:  "Inbox",
+				Color: "gray",
+			}
+			if err := DB.Create(&inboxProject).Error; err != nil {
+				logger.Error("Failed to create Inbox project").Err(err).Send()
+				return err
+			}
+			logger.Info("Inbox project created successfully").Send()
+		} else {
+			logger.Error("Failed to check for Inbox project").Err(result.Error).Send()
+			return result.Error
+		}
+	} else {
+		logger.Info("Inbox project already exists").Send()
+	}
+
 	return nil
 }
