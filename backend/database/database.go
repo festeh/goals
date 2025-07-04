@@ -2,6 +2,7 @@ package database
 
 import (
 	"os"
+	"time"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"github.com/dima-b/go-task-backend/logger"
@@ -18,13 +19,35 @@ func InitDB() error {
 	
 	logger.Info("Connecting to database").Send()
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		PrepareStmt: false,
+	})
 	if err != nil {
 		logger.Error("Failed to connect to database").Err(err).Send()
 		return err
 	}
 
+	// Configure connection pool to prevent cached plan issues
+	sqlDB, err := DB.DB()
+	if err != nil {
+		logger.Error("Failed to get underlying sql.DB").Err(err).Send()
+		return err
+	}
+	
+	// Set connection pool settings to refresh connections regularly
+	sqlDB.SetMaxOpenConns(25)
+	sqlDB.SetMaxIdleConns(5)
+	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 5 minutes
+	sqlDB.SetConnMaxIdleTime(30 * time.Second) // 30 seconds
+
 	logger.Info("Database connected successfully").Send()
+
+	// Clear any cached prepared statements to avoid schema mismatch errors
+	if err := DB.Exec("DISCARD ALL").Error; err != nil {
+		logger.Warn("Failed to discard cached plans").Err(err).Send()
+	} else {
+		logger.Info("Cleared cached database plans").Send()
+	}
 
 	// Auto-migrate the schema
 	logger.Info("Running database migrations").Send()
