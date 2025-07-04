@@ -1,0 +1,106 @@
+import 'package:flutter/material.dart';
+import '../models/project.dart';
+import '../services/api_service.dart';
+import '../utils/color_utils.dart';
+
+class AddProjectDialog extends StatefulWidget {
+  final VoidCallback onProjectAdded;
+
+  AddProjectDialog({required this.onProjectAdded});
+
+  @override
+  _AddProjectDialogState createState() => _AddProjectDialogState();
+}
+
+class _AddProjectDialogState extends State<AddProjectDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  String? _selectedColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedColor = colorMap.keys.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Add New Project'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Project Name'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a project name';
+                }
+                return null;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              value: _selectedColor,
+              decoration: InputDecoration(labelText: 'Color'),
+              items: colorMap.keys.map((String colorName) {
+                return DropdownMenuItem<String>(
+                  value: colorName,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: colorMap[colorName],
+                        radius: 10,
+                      ),
+                      SizedBox(width: 10),
+                      Text(colorName),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  _selectedColor = newValue;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a color';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (_formKey.currentState!.validate()) {
+              try {
+                final project = Project(
+                  name: _nameController.text,
+                  color: _selectedColor!,
+                );
+                await ApiService.createProject(project);
+                Navigator.of(context).pop();
+                widget.onProjectAdded();
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error creating project: $e')),
+                );
+              }
+            }
+          },
+          child: Text('Add'),
+        ),
+      ],
+    );
+  }
+}
