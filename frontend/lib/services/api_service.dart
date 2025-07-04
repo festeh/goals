@@ -177,12 +177,12 @@ class ApiService {
   }
 
   static Future<void> reorderProjects(List<int> projectIds) async {
-    _logger.info('Reordering projects...');
+    _logger.info('Reordering projects...', projectIds);
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/projects/reorder'),
+        Uri.parse('$baseUrl/projects-reorder'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({'project_ids': projectIds}),
+        body: json.encode(projectIds),
       );
       if (response.statusCode != 200) {
         _logger.warning('Failed to reorder projects: ${response.statusCode}');

@@ -60,13 +60,15 @@ func main() {
 	r.Route("/projects", func(r chi.Router) {
 		r.Get("/", listProjects)
 		r.Post("/", createProject)
-		r.Put("/reorder", reorderProjects)
 		r.Route("/{projectID}", func(r chi.Router) {
+			r.Put("/tasks/reorder", reorderTasks)
 			r.Put("/", updateProject)
 			r.Delete("/", deleteProject)
-			r.Put("/tasks/reorder", reorderTasks)
 		})
 	})
+
+	// Reordering routes (separate to avoid conflicts)
+	r.Put("/projects-reorder", reorderProjects)
 
 	logger.Info("Starting server on :3000").Send()
 	err = http.ListenAndServe(":3000", r)
