@@ -27,6 +27,7 @@ class CompletedTaskWidget extends StatelessWidget {
         onTap: () => onEdit(task),
         borderRadius: BorderRadius.circular(12),
         child: ListTile(
+          contentPadding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
           leading: Checkbox(
             value: task.completedAt != null,
             onChanged: (value) => onToggleComplete(task),
