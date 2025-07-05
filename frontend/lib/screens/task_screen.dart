@@ -1,5 +1,4 @@
-import 'package:frontend/widgets/add_task_dialog.dart';
-import 'package:frontend/widgets/edit_task_dialog.dart';
+import 'package:frontend/widgets/task_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/error_dialog.dart';
 import '../models/task.dart';
@@ -94,12 +93,15 @@ class _TaskScreenState extends State<TaskScreen> {
   void _showAddTaskDialog() {
     showDialog(
       context: context,
-      builder: (context) => AddTaskDialog(
+      builder: (context) => TaskFormDialog(
         projects: _cachingService.projects,
         selectedProject: widget.project,
-        onTaskAdded: () {
+        onSave: (task) async {
+          await ApiService.createTask(task);
           setState(() {});
         },
+        title: 'Add New Task',
+        submitButtonText: 'Add',
       ),
     );
   }
@@ -107,12 +109,15 @@ class _TaskScreenState extends State<TaskScreen> {
   void _showEditTaskDialog(Task task) {
     showDialog(
       context: context,
-      builder: (context) => EditTaskDialog(
+      builder: (context) => TaskFormDialog(
         task: task,
         projects: _cachingService.projects,
-        onTaskUpdated: () {
+        onSave: (updatedTask) async {
+          await ApiService.updateTask(task.id!, updatedTask);
           setState(() {});
         },
+        title: 'Edit Task',
+        submitButtonText: 'Save',
       ),
     );
   }

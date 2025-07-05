@@ -5,26 +5,32 @@ import 'package:frontend/services/api_service.dart';
 import 'package:frontend/services/caching_service.dart';
 import 'package:frontend/widgets/error_dialog.dart';
 
-class AddTaskDialog extends StatefulWidget {
+class TaskFormDialog extends StatefulWidget {
+  final Task? task;
   final List<Project> projects;
   final Project? selectedProject;
-  final VoidCallback onTaskAdded;
+  final Function(Task) onSave;
+  final String title;
+  final String submitButtonText;
 
-  const AddTaskDialog({
+  const TaskFormDialog({
     super.key,
+    this.task,
     required this.projects,
     this.selectedProject,
-    required this.onTaskAdded,
+    required this.onSave,
+    required this.title,
+    required this.submitButtonText,
   });
 
   @override
-  _AddTaskDialogState createState() => _AddTaskDialogState();
+  _TaskFormDialogState createState() => _TaskFormDialogState();
 }
 
-class _AddTaskDialogState extends State<AddTaskDialog> {
+class _TaskFormDialogState extends State<TaskFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _descriptionController = TextEditingController();
-  final _labelsController = TextEditingController();
+  late TextEditingController _descriptionController;
+  late TextEditingController _labelsController;
   int? _selectedProjectId;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -33,13 +39,19 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   @override
   void initState() {
     super.initState();
-    _selectedProjectId = widget.selectedProject?.id;
+    _descriptionController = TextEditingController(text: widget.task?.description ?? '');
+    _labelsController = TextEditingController(text: widget.task?.labels.join(', ') ?? '');
+    _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
+    if (widget.task?.dueDate != null) {
+      _selectedDate = widget.task!.dueDate;
+      _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDate!);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add New Task'),
+      title: Text(widget.title),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -92,7 +104,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                       final date = await showDatePicker(
                         context: context,
                         initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime.now(),
+                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (date != null) {
@@ -158,6 +170,17 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     .where((s) => s.isNotEmpty)
                     .toList();
 
+                DateTime? dateTime;
+                if (_selectedDate != null) {
+                  dateTime = DateTime(
+                    _selectedDate!.year,
+                    _selectedDate!.month,
+                    _selectedDate!.day,
+                    _selectedTime?.hour ?? 0,
+                    _selectedTime?.minute ?? 0,
+                  );
+                }
+
                 final tasksForProject = _cachingService.tasks
                     .where((task) => task.projectId == _selectedProjectId)
                     .toList();
@@ -168,33 +191,23 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         : 0) +
                     1;
 
-                DateTime? dateTime;
-                if (_selectedDate != null && _selectedTime != null) {
-                  dateTime = DateTime(
-                    _selectedDate!.year,
-                    _selectedDate!.month,
-                    _selectedDate!.day,
-                    _selectedTime!.hour,
-                    _selectedTime!.minute,
-                  );
-                }
-
                 final task = Task(
+                  id: widget.task?.id,
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
                   dueDate: dateTime,
                   labels: labels,
-                  order: newOrder,
+                  order: widget.task?.order ?? newOrder,
+                  completedAt: widget.task?.completedAt,
                 );
 
-                await ApiService.createTask(task);
+                await widget.onSave(task);
                 Navigator.of(context).pop();
-                widget.onTaskAdded();
               } catch (e) {
                 showDialog(
                   context: context,
                   builder: (context) => ErrorDialog(
-                    error: 'Error creating task: $e',
+                    error: 'Error saving task: $e',
                     onSync: () async {
                       try {
                         await ApiService.getTasks();
@@ -207,7 +220,7 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
               }
             }
           },
-          child: const Text('Add'),
+          child: Text(widget.submitButtonText),
         ),
       ],
     );
