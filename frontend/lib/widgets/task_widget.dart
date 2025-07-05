@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/widgets/due_widget.dart';
 import '../models/task.dart';
 
 class TaskWidget extends StatelessWidget {
@@ -40,40 +41,32 @@ class TaskWidget extends StatelessWidget {
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                if (task.dueDate != null)
-                  Text(
-                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}')
-                else if (task.dueDatetime != null)
-                  Text(
-                      'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]} ${TimeOfDay.fromDateTime(task.dueDatetime!).format(context)}'),
+                DueWidget(task: task),
+                const SizedBox(width: 8),
                 if (task.labels.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: Wrap(
-                      spacing: 8.0,
-                      runSpacing: 4.0,
-                      children: task.labels
-                          .map((label) => Chip(
-                                label: Text(label),
-                                backgroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .secondary
-                                    .withAlpha(51),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(8),
-                                  side: BorderSide(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .secondary,
-                                  ),
+                  Wrap(
+                    spacing: 8.0,
+                    runSpacing: 4.0,
+                    children: task.labels
+                        .map((label) => Chip(
+                              label: Text(label),
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .secondary
+                                  .withAlpha(51),
+                              shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.circular(8),
+                                side: BorderSide(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondary,
                                 ),
-                              ))
-                          .toList(),
-                    ),
+                              ),
+                            ))
+                        .toList(),
                   ),
               ],
             ),
