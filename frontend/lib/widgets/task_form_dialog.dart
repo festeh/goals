@@ -1,4 +1,3 @@
-import 'package:frontend/utils/value_wrapper.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/models/project.dart';
 import 'package:frontend/models/task.dart';
@@ -166,9 +165,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                       if (time != null) {
                         setState(() {
                           _selectedTime = time;
-                          if (_selectedDate == null) {
-                            _selectedDate = DateTime.now();
-                          }
+                          _selectedDate ??= DateTime.now();
                         });
                       }
                     },
