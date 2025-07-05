@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
+	"time"
 
 	"github.com/dima-b/go-task-backend/database"
 	"github.com/dima-b/go-task-backend/logger"
 	"github.com/dima-b/go-task-backend/middleware"
+	"github.com/dima-b/go-task-backend/utils"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
@@ -53,6 +54,7 @@ func main() {
 		r.Route("/{taskID}", func(r chi.Router) {
 			r.Put("/", updateTask)
 			r.Delete("/", deleteTask)
+			r.Post("/complete", completeTask)
 		})
 	})
 
@@ -122,54 +124,73 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateTask(w http.ResponseWriter, r *http.Request) {
-	taskID := chi.URLParam(r, "taskID")
-	logger.Info("Updating task").Str("task_id", taskID).Send()
+	logger.Info("Updating task").Send()
 
-	id, err := strconv.ParseUint(taskID, 10, 32)
-	if err != nil {
-		logger.Error("Invalid task ID").Str("task_id", taskID).Err(err).Send()
-		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+	id, ok := utils.ParseTaskID(r, w)
+	if !ok {
 		return
 	}
 
 	var t database.Task
-	err = json.NewDecoder(r.Body).Decode(&t)
+	err := json.NewDecoder(r.Body).Decode(&t)
 	if err != nil {
 		logger.Error("Failed to decode task update request").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	result := database.DB.Model(&t).Where("id = ?", uint(id)).Updates(t)
+	result := database.DB.Model(&t).Where("id = ?", id).Updates(t)
 	if result.Error != nil {
-		logger.Error("Failed to update task").Uint("task_id", uint(id)).Err(result.Error).Send()
+		logger.Error("Failed to update task").Uint("task_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info("Successfully updated task").Uint("task_id", uint(id)).Send()
+	logger.Info("Successfully updated task").Uint("task_id", id).Send()
 	w.WriteHeader(http.StatusOK)
 }
 
 func deleteTask(w http.ResponseWriter, r *http.Request) {
-	taskID := chi.URLParam(r, "taskID")
-	logger.Info("Deleting task").Str("task_id", taskID).Send()
+	logger.Info("Deleting task").Send()
 
-	id, err := strconv.ParseUint(taskID, 10, 32)
-	if err != nil {
-		logger.Error("Invalid task ID").Str("task_id", taskID).Err(err).Send()
-		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+	id, ok := utils.ParseTaskID(r, w)
+	if !ok {
 		return
 	}
 
-	result := database.DB.Delete(&database.Task{}, uint(id))
+	result := database.DB.Delete(&database.Task{}, id)
 	if result.Error != nil {
-		logger.Error("Failed to delete task").Uint("task_id", uint(id)).Err(result.Error).Send()
+		logger.Error("Failed to delete task").Uint("task_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info("Successfully deleted task").Uint("task_id", uint(id)).Send()
+	logger.Info("Successfully deleted task").Uint("task_id", id).Send()
+	w.WriteHeader(http.StatusOK)
+}
+
+func completeTask(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Completing task").Send()
+
+	id, ok := utils.ParseTaskID(r, w)
+	if !ok {
+		return
+	}
+
+	result := database.DB.Model(&database.Task{}).Where("id = ?", id).Update("completed_at", time.Now())
+	if result.Error != nil {
+		logger.Error("Failed to complete task").Uint("task_id", id).Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if result.RowsAffected == 0 {
+		logger.Error("Task not found").Uint("task_id", id).Send()
+		http.Error(w, "Task not found", http.StatusNotFound)
+		return
+	}
+
+	logger.Info("Successfully completed task").Uint("task_id", id).Send()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -218,54 +239,48 @@ func createProject(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateProject(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
-	logger.Info("Updating project").Str("project_id", projectID).Send()
+	logger.Info("Updating project").Send()
 
-	id, err := strconv.ParseUint(projectID, 10, 32)
-	if err != nil {
-		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+	id, ok := utils.ParseProjectID(r, w)
+	if !ok {
 		return
 	}
 
 	var p database.Project
-	err = json.NewDecoder(r.Body).Decode(&p)
+	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		logger.Error("Failed to decode project update request").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	result := database.DB.Model(&p).Where("id = ?", uint(id)).Updates(p)
+	result := database.DB.Model(&p).Where("id = ?", id).Updates(p)
 	if result.Error != nil {
-		logger.Error("Failed to update project").Uint("project_id", uint(id)).Err(result.Error).Send()
+		logger.Error("Failed to update project").Uint("project_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info("Successfully updated project").Uint("project_id", uint(id)).Send()
+	logger.Info("Successfully updated project").Uint("project_id", id).Send()
 	w.WriteHeader(http.StatusOK)
 }
 
 func deleteProject(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
-	logger.Info("Deleting project").Str("project_id", projectID).Send()
+	logger.Info("Deleting project").Send()
 
-	id, err := strconv.ParseUint(projectID, 10, 32)
-	if err != nil {
-		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+	id, ok := utils.ParseProjectID(r, w)
+	if !ok {
 		return
 	}
 
-	result := database.DB.Delete(&database.Project{}, uint(id))
+	result := database.DB.Delete(&database.Project{}, id)
 	if result.Error != nil {
-		logger.Error("Failed to delete project").Uint("project_id", uint(id)).Err(result.Error).Send()
+		logger.Error("Failed to delete project").Uint("project_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info("Successfully deleted project").Uint("project_id", uint(id)).Send()
+	logger.Info("Successfully deleted project").Uint("project_id", id).Send()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -307,31 +322,28 @@ func reorderProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func reorderTasks(w http.ResponseWriter, r *http.Request) {
-	projectID := chi.URLParam(r, "projectID")
-	logger.Info("Reordering tasks for project").Str("project_id", projectID).Send()
+	logger.Info("Reordering tasks for project").Send()
 
-	id, err := strconv.ParseUint(projectID, 10, 32)
-	if err != nil {
-		logger.Error("Invalid project ID").Str("project_id", projectID).Err(err).Send()
-		http.Error(w, "Invalid project ID", http.StatusBadRequest)
+	id, ok := utils.ParseProjectID(r, w)
+	if !ok {
 		return
 	}
 
 	var taskIDs []uint
-	err = json.NewDecoder(r.Body).Decode(&taskIDs)
+	err := json.NewDecoder(r.Body).Decode(&taskIDs)
 	if err != nil {
 		logger.Error("Failed to decode task IDs").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = updateOrderBatch(&database.Task{}, taskIDs, "project_id = ?", uint(id))
+	err = updateOrderBatch(&database.Task{}, taskIDs, "project_id = ?", id)
 	if err != nil {
-		logger.Error("Failed to reorder tasks").Uint("project_id", uint(id)).Err(err).Send()
+		logger.Error("Failed to reorder tasks").Uint("project_id", id).Err(err).Send()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	logger.Info("Successfully reordered tasks").Uint("project_id", uint(id)).Int("count", len(taskIDs)).Send()
+	logger.Info("Successfully reordered tasks").Uint("project_id", id).Int("count", len(taskIDs)).Send()
 	w.WriteHeader(http.StatusOK)
 }
