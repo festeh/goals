@@ -166,6 +166,9 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                       if (time != null) {
                         setState(() {
                           _selectedTime = time;
+                          if (_selectedDate == null) {
+                            _selectedDate = DateTime.now();
+                          }
                         });
                       }
                     },
@@ -173,6 +176,18 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                         ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
                         : 'Select Time'),
                   ),
+                  if (_selectedDate != null)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      tooltip: 'Clear date and time',
+                      onPressed: () {
+                        setState(() {
+                          _selectedDate = null;
+                          _selectedTime = null;
+                          _selectedReminders.clear();
+                        });
+                      },
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
