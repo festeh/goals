@@ -360,10 +360,12 @@ class _TaskScreenState extends State<TaskScreen> {
                   });
 
                   try {
-                    await ApiService.reorderTasks(_cachingService.tasks
-                        .where((t) => t.projectId == widget.project!.id)
-                        .map((p) => p.id!)
-                        .toList());
+                    await ApiService.reorderTasks(
+                        widget.project!.id!,
+                        _cachingService.tasks
+                            .where((t) => t.projectId == widget.project!.id)
+                            .map((p) => p.id!)
+                            .toList());
                   } catch (e) {
                     _showErrorDialog('Error reordering tasks: $e');
                   }

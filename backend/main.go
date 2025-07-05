@@ -322,12 +322,12 @@ func reorderProjects(w http.ResponseWriter, r *http.Request) {
 }
 
 func reorderTasks(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Reordering tasks for project").Send()
 
 	id, ok := utils.ParseProjectID(r, w)
 	if !ok {
 		return
 	}
+	logger.Info("Reordering tasks for project").Uint("project_id", id).Send()
 
 	var taskIDs []uint
 	err := json.NewDecoder(r.Body).Decode(&taskIDs)
@@ -336,6 +336,7 @@ func reorderTasks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	logger.Info("Task IDs").Interface("task_ids", taskIDs).Send()
 
 	err = updateOrderBatch(&database.Task{}, taskIDs, "project_id = ?", id)
 	if err != nil {
