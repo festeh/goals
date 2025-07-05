@@ -65,11 +65,26 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   Future<void> _toggleComplete(Task task) async {
+    final originalTask = task;
+    final isCompleted = task.completedAt != null;
+    final updatedTask = task.copyWith(
+      completedAt: isCompleted ? null : DateTime.now(),
+      completedAtIsNull: isCompleted,
+    );
+
+    _cachingService.updateTask(updatedTask);
+    setState(() {});
+
     try {
-      await ApiService.completeTask(task.id!);
-      await _sync();
+      if (isCompleted) {
+        await ApiService.updateTask(task.id!, updatedTask);
+      } else {
+        await ApiService.completeTask(task.id!);
+      }
     } catch (e) {
-      _showErrorDialog('Error completing task: $e');
+      _cachingService.updateTask(originalTask);
+      setState(() {});
+      _showErrorDialog('Error toggling task completion: $e');
     }
   }
 

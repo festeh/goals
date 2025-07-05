@@ -124,7 +124,6 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateTask(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Updating task").Send()
 
 	id, ok := utils.ParseTaskID(r, w)
 	if !ok {
@@ -133,6 +132,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 
 	var t database.Task
 	err := json.NewDecoder(r.Body).Decode(&t)
+	logger.Info("Updating task").Uint("task_id", id).Interface("task", t).Send()
 	if err != nil {
 		logger.Error("Failed to decode task update request").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)

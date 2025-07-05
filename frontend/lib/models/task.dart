@@ -40,4 +40,25 @@ class Task {
       'completed_at': completedAt?.toIso8601String(),
     };
   }
+
+  Task copyWith({
+    int? id,
+    String? description,
+    int? projectId,
+    DateTime? dueDate,
+    List<String>? labels,
+    int? order,
+    DateTime? completedAt,
+    bool completedAtIsNull = false,
+  }) {
+    return Task(
+      id: id ?? this.id,
+      description: description ?? this.description,
+      projectId: projectId ?? this.projectId,
+      dueDate: dueDate ?? this.dueDate,
+      labels: labels ?? this.labels,
+      order: order ?? this.order,
+      completedAt: completedAtIsNull ? null : (completedAt ?? this.completedAt),
+    );
+  }
 }
