@@ -20,7 +20,7 @@ class TaskWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 4,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -34,7 +34,7 @@ class TaskWidget extends StatelessWidget {
             value: task.completedAt != null,
             onChanged: (value) => onToggleComplete(task),
           ),
-          contentPadding: const EdgeInsets.all(16.0),
+          contentPadding: const EdgeInsets.all(3.0),
           title: Text(
             task.description,
             style: Theme.of(context).textTheme.bodyLarge,

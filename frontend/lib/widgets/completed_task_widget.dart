@@ -19,7 +19,7 @@ class CompletedTaskWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2.0,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
