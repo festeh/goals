@@ -190,6 +190,8 @@ class _TaskScreenState extends State<TaskScreen> {
                     child: InkWell(
                       onTap: () => _showEditTaskDialog(task),
                       borderRadius: BorderRadius.circular(12),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
                       child: ListTile(
                         leading: Checkbox(
                           value: task.completedAt != null,
@@ -269,6 +271,8 @@ class _TaskScreenState extends State<TaskScreen> {
                     child: InkWell(
                       onTap: () => _showEditTaskDialog(task),
                       borderRadius: BorderRadius.circular(12),
+                      splashColor: Colors.transparent,
+                      highlightColor: Colors.transparent,
                       child: ListTile(
                         leading: Checkbox(
                           value: task.completedAt != null,
