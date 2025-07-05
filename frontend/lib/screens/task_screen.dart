@@ -141,8 +141,9 @@ class _TaskScreenState extends State<TaskScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                              'Due: ${task.dueDate.toLocal().toString().split(' ')[0]}'),
+                          if (task.dueDate != null)
+                            Text(
+                                'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
                           if (task.labels.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
@@ -208,8 +209,8 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   final _descriptionController = TextEditingController();
   final _labelsController = TextEditingController();
   int? _selectedProjectId;
-  DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
   final CachingService _cachingService = CachingService();
 
   @override
@@ -261,14 +262,19 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                 },
               ),
               const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Due', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
               Row(
                 children: [
-                  const Text('Due Date: '),
+                  const Icon(Icons.calendar_today),
+                  const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: _selectedDate,
+                        initialDate: _selectedDate ?? DateTime.now(),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
@@ -278,15 +284,23 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         });
                       }
                     },
-                    child:
-                        Text(_selectedDate.toLocal().toString().split(' ')[0]),
+                    child: Text(_selectedDate?.toLocal().toString().split(' ')[0] ?? 'Select Date'),
                   ),
-                  const Text('Time: '),
+                  const Spacer(),
+                  const Icon(Icons.access_time),
+                  const SizedBox(width: 8),
                   TextButton(
                     onPressed: () async {
                       final time = await showTimePicker(
                         context: context,
-                        initialTime: _selectedTime,
+                        initialTime: _selectedTime ?? TimeOfDay.now(),
+                        builder: (BuildContext context, Widget? child) {
+                          return MediaQuery(
+                            data: MediaQuery.of(context)
+                                .copyWith(alwaysUse24HourFormat: true),
+                            child: child!,
+                          );
+                        },
                       );
                       if (time != null) {
                         setState(() {
@@ -294,7 +308,9 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         });
                       }
                     },
-                    child: Text(_selectedTime.format(context)),
+                    child: Text(_selectedTime != null
+                        ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
+                        : 'Select Time'),
                   ),
                 ],
               ),
@@ -335,13 +351,16 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         : 0) +
                     1;
 
-                final dateTime = DateTime(
-                  _selectedDate.year,
-                  _selectedDate.month,
-                  _selectedDate.day,
-                  _selectedTime.hour,
-                  _selectedTime.minute,
-                );
+                DateTime? dateTime;
+                if (_selectedDate != null && _selectedTime != null) {
+                  dateTime = DateTime(
+                    _selectedDate!.year,
+                    _selectedDate!.month,
+                    _selectedDate!.day,
+                    _selectedTime!.hour,
+                    _selectedTime!.minute,
+                  );
+                }
 
                 final task = Task(
                   description: _descriptionController.text,

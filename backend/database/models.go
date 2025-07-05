@@ -2,7 +2,6 @@ package database
 
 import (
 	"time"
-	"gorm.io/gorm"
 	"github.com/lib/pq"
 )
 
@@ -12,11 +11,12 @@ type Task struct {
 	ProjectID   *uint          `gorm:"index" json:"project_id"`
 	Project     *Project       `gorm:"foreignKey:ProjectID" json:"project"`
 	DueDate     *time.Time     `json:"due_date"`
+	DueDatetime *time.Time     `json:"due_datetime"`
 	Labels      pq.StringArray `gorm:"type:text[]" json:"labels"`
 	Order       int            `gorm:"default:0" json:"order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt `gorm:"index" json:"deleted_at"`
+	CompletedAt time.Time      `json:"completed_at"`
 }
 
 type Project struct {

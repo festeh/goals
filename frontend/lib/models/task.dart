@@ -2,7 +2,7 @@ class Task {
   final int? id;
   final String description;
   final int projectId;
-  final DateTime dueDate;
+  final DateTime? dueDate;
   final List<String> labels;
   final int order;
 
@@ -10,7 +10,7 @@ class Task {
     this.id,
     required this.description,
     required this.projectId,
-    required this.dueDate,
+    this.dueDate,
     required this.labels,
     required this.order,
   });
@@ -20,7 +20,7 @@ class Task {
       id: json['id'],
       description: json['description'],
       projectId: json['project_id'],
-      dueDate: DateTime.parse(json['due_date']),
+      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
       labels: List<String>.from(json['labels'] ?? []),
       order: json['order'],
     );
@@ -31,7 +31,7 @@ class Task {
       'id': id,
       'description': description,
       'project_id': projectId,
-      'due_date': dueDate.toIso8601String(),
+      'due_date': dueDate?.toIso8601String(),
       'labels': labels,
       'order': order,
     };
