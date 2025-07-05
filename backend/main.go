@@ -139,7 +139,7 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := database.DB.Model(&t).Where("id = ?", id).Updates(t)
+	result := database.DB.Model(&t).Where("id = ?", id).Select("*").Updates(t)
 	if result.Error != nil {
 		logger.Error("Failed to update task").Uint("task_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
