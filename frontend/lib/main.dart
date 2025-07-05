@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/models/project.dart';
 import 'package:frontend/widgets/edit_project_dialog.dart';
 import 'package:frontend/widgets/error_dialog.dart';
@@ -42,6 +43,14 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(fontSize: 14, color: Colors.white60),
         ),
       ),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en', 'GB'), // English, Great Britain
+      ],
       home: const MainScreen(),
     );
   }
