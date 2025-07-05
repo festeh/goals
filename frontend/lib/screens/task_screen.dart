@@ -13,10 +13,10 @@ class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key, required this.project});
 
   @override
-  _TaskScreenState createState() => _TaskScreenState();
+  TaskScreenState createState() => TaskScreenState();
 }
 
-class _TaskScreenState extends State<TaskScreen> {
+class TaskScreenState extends State<TaskScreen> {
   final CachingService _cachingService = CachingService();
 
   List<Task> get _tasksForProject {
@@ -213,9 +213,9 @@ class _TaskScreenState extends State<TaskScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (task.dueDate != null)
+                                if (task.dueDatetime != null)
                                   Text(
-                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
+                                      'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]}'),
                                 if (task.labels.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
@@ -229,7 +229,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                                         context)
                                                     .colorScheme
                                                     .secondary
-                                                    .withOpacity(0.2),
+                                                    .withAlpha(51),
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
                                                       BorderRadius.circular(8),
@@ -302,9 +302,9 @@ class _TaskScreenState extends State<TaskScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (task.dueDate != null)
+                              if (task.dueDatetime != null)
                                 Text(
-                                    'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
+                                    'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]}'),
                               if (task.labels.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
@@ -317,7 +317,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                               backgroundColor: Theme.of(context)
                                                   .colorScheme
                                                   .secondary
-                                                  .withOpacity(0.2),
+                                                  .withAlpha(51),
                                               shape: RoundedRectangleBorder(
                                                 borderRadius:
                                                     BorderRadius.circular(8),

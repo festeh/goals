@@ -24,10 +24,10 @@ class TaskFormDialog extends StatefulWidget {
   });
 
   @override
-  _TaskFormDialogState createState() => _TaskFormDialogState();
+  TaskFormDialogState createState() => TaskFormDialogState();
 }
 
-class _TaskFormDialogState extends State<TaskFormDialog> {
+class TaskFormDialogState extends State<TaskFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
   late TextEditingController _labelsController;
@@ -52,19 +52,19 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
     _descriptionController = TextEditingController(text: widget.task?.description ?? '');
     _labelsController = TextEditingController(text: widget.task?.labels.join(', ') ?? '');
     _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
-    if (widget.task?.dueDate != null) {
-      _selectedDate = widget.task!.dueDate;
-      _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDate!);
+    if (widget.task?.dueDatetime != null) {
+      _selectedDate = widget.task!.dueDatetime;
+      _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDatetime!);
     }
     if (widget.task != null) {
       _selectedReminders = widget.task!.reminders
-          .map((e) => _reminderStringFromDateTime(e, widget.task!.dueDate!))
+          .map((e) => _reminderStringFromDateTime(e, widget.task!.dueDatetime!))
           .toList();
     }
   }
 
-  String _reminderStringFromDateTime(DateTime reminder, DateTime dueDate) {
-    final difference = dueDate.difference(reminder);
+  String _reminderStringFromDateTime(DateTime reminder, DateTime dueDatetime) {
+    final difference = dueDatetime.difference(reminder);
     if (difference.inDays >= 7) {
       return '${difference.inDays ~/ 7} week';
     } else if (difference.inDays > 0) {
@@ -272,7 +272,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   id: widget.task?.id,
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
-                  dueDate: dateTime,
+                  dueDatetime: dateTime,
                   labels: labels,
                   order: widget.task?.order ?? newOrder,
                   completedAt: widget.task?.completedAt,
