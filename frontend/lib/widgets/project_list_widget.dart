@@ -31,50 +31,60 @@ class ProjectList extends StatelessWidget {
           return ReorderableDragStartListener(
             index: index,
             key: Key(project.id.toString()),
-            child: InkWell(
-              onTap: () => onProjectSelected(index),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: getColor(project.color),
-                      radius: 12,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Text(
-                        project.name,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              fontWeight: selectedIndex == index
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: selectedIndex == index
+                    ? Theme.of(context).highlightColor
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: InkWell(
+                onTap: () => onProjectSelected(index),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: getColor(project.color),
+                        radius: 12,
                       ),
-                    ),
-                    PopupMenuButton<String>(
-                      padding: EdgeInsets.zero,
-                      onSelected: (value) {
-                        if (value == 'edit') {
-                          onEdit(project);
-                        } else if (value == 'delete') {
-                          onDelete(project.id!);
-                        }
-                      },
-                      itemBuilder: (BuildContext context) =>
-                          <PopupMenuEntry<String>>[
-                        const PopupMenuItem<String>(
-                          value: 'edit',
-                          child: Text('Edit'),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          project.name,
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: selectedIndex == index
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                         ),
-                        const PopupMenuItem<String>(
-                          value: 'delete',
-                          child: Text('Delete'),
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      PopupMenuButton<String>(
+                        padding: EdgeInsets.zero,
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            onEdit(project);
+                          } else if (value == 'delete') {
+                            onDelete(project.id!);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) =>
+                            <PopupMenuEntry<String>>[
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'delete',
+                            child: Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
