@@ -1,9 +1,43 @@
 package database
 
 import (
+	"database/sql/driver"
 	"time"
 	"github.com/lib/pq"
 )
+
+// TimeArray is a custom type for handling timestamp arrays
+type TimeArray []time.Time
+
+// Value implements driver.Valuer interface
+func (ta TimeArray) Value() (driver.Value, error) {
+	if ta == nil {
+		return nil, nil
+	}
+	timestamps := make([]interface{}, len(ta))
+	for i, t := range ta {
+		timestamps[i] = t
+	}
+	return pq.Array(timestamps).Value()
+}
+
+// Scan implements sql.Scanner interface
+func (ta *TimeArray) Scan(value interface{}) error {
+	var timestamps pq.StringArray
+	if err := timestamps.Scan(value); err != nil {
+		return err
+	}
+	
+	*ta = make(TimeArray, len(timestamps))
+	for i, ts := range timestamps {
+		t, err := time.Parse(time.RFC3339, ts)
+		if err != nil {
+			return err
+		}
+		(*ta)[i] = t
+	}
+	return nil
+}
 
 type Task struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
@@ -13,6 +47,7 @@ type Task struct {
 	DueDate     *time.Time     `json:"due_date"`
 	DueDatetime *time.Time     `json:"due_datetime"`
 	Labels      pq.StringArray `gorm:"type:text[]" json:"labels"`
+	Reminders   TimeArray     `gorm:"type:timestamp[]" json:"reminders"`
 	Order       int            `gorm:"default:0" json:"order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
