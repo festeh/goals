@@ -49,8 +49,12 @@ class TaskFormDialogState extends State<TaskFormDialog> {
   @override
   void initState() {
     super.initState();
-    _descriptionController = TextEditingController(text: widget.task?.description ?? '');
-    _labelsController = TextEditingController(text: widget.task?.labels.join(', ') ?? '');
+    _descriptionController = TextEditingController(
+      text: widget.task?.description ?? '',
+    );
+    _labelsController = TextEditingController(
+      text: widget.task?.labels.join(', ') ?? '',
+    );
     _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
     if (widget.task?.dueDate != null) {
       _selectedDate = widget.task!.dueDate;
@@ -60,8 +64,12 @@ class TaskFormDialogState extends State<TaskFormDialog> {
     }
     if (widget.task != null) {
       _selectedReminders = widget.task!.reminders
-          .map((e) =>
-              _reminderStringFromDateTime(e, widget.task!.dueDatetime ?? widget.task!.dueDate!))
+          .map(
+            (e) => _reminderStringFromDateTime(
+              e,
+              widget.task!.dueDatetime ?? widget.task!.dueDate!,
+            ),
+          )
           .toList();
     }
   }
@@ -127,7 +135,10 @@ class TaskFormDialogState extends State<TaskFormDialog> {
               const SizedBox(height: 16),
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Due', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: Text(
+                  'Due',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
               ),
               Row(
                 children: [
@@ -138,7 +149,9 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                       final date = await showDatePicker(
                         context: context,
                         initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                        firstDate: DateTime.now().subtract(
+                          const Duration(days: 365),
+                        ),
                         lastDate: DateTime.now().add(const Duration(days: 365)),
                       );
                       if (date != null) {
@@ -147,7 +160,10 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                         });
                       }
                     },
-                    child: Text(_selectedDate?.toLocal().toString().split(' ')[0] ?? 'Select Date'),
+                    child: Text(
+                      _selectedDate?.toLocal().toString().split(' ')[0] ??
+                          'Select Date',
+                    ),
                   ),
                   const Spacer(),
                   const Icon(Icons.access_time),
@@ -159,8 +175,9 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                         initialTime: _selectedTime ?? TimeOfDay.now(),
                         builder: (BuildContext context, Widget? child) {
                           return MediaQuery(
-                            data: MediaQuery.of(context)
-                                .copyWith(alwaysUse24HourFormat: true),
+                            data: MediaQuery.of(
+                              context,
+                            ).copyWith(alwaysUse24HourFormat: true),
                             child: child!,
                           );
                         },
@@ -172,9 +189,11 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                         });
                       }
                     },
-                    child: Text(_selectedTime != null
-                        ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
-                        : 'Select Time'),
+                    child: Text(
+                      _selectedTime != null
+                          ? '${_selectedTime!.hour.toString().padLeft(2, '0')}:${_selectedTime!.minute.toString().padLeft(2, '0')}'
+                          : 'Select Time',
+                    ),
                   ),
                   if (_selectedDate != null)
                     IconButton(
@@ -199,7 +218,10 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('Reminders', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Reminders',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8.0,
@@ -208,7 +230,8 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   final isEnabled = _selectedDate != null;
                   return FilterChip(
                     label: Text(reminder),
-                    selected: isEnabled && _selectedReminders.contains(reminder),
+                    selected:
+                        isEnabled && _selectedReminders.contains(reminder),
                     onSelected: isEnabled
                         ? (selected) {
                             setState(() {
@@ -246,7 +269,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 DateTime? dueDatetime;
                 if (_selectedDate != null) {
                   if (_selectedTime != null) {
-                    dueDatetime = DateTime(
+                    dueDatetime = DateTime.utc(
                       _selectedDate!.year,
                       _selectedDate!.month,
                       _selectedDate!.day,
@@ -254,7 +277,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                       _selectedTime!.minute,
                     );
                   } else {
-                    dueDate = DateTime(
+                    dueDate = DateTime.utc(
                       _selectedDate!.year,
                       _selectedDate!.month,
                       _selectedDate!.day,
@@ -265,10 +288,11 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 final tasksForProject = _cachingService.tasks
                     .where((task) => task.projectId == _selectedProjectId)
                     .toList();
-                final newOrder = (tasksForProject.isNotEmpty
+                final newOrder =
+                    (tasksForProject.isNotEmpty
                         ? tasksForProject
-                            .map((t) => t.order)
-                            .reduce((a, b) => a > b ? a : b)
+                              .map((t) => t.order)
+                              .reduce((a, b) => a > b ? a : b)
                         : 0) +
                     1;
 
@@ -276,12 +300,14 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 if (dueDatetime != null) {
                   for (final reminderString in _selectedReminders) {
                     reminders.add(
-                        dueDatetime.subtract(_getDuration(reminderString)));
+                      dueDatetime.subtract(_getDuration(reminderString)),
+                    );
                   }
                 } else if (dueDate != null) {
                   for (final reminderString in _selectedReminders) {
-                    reminders
-                        .add(dueDate.subtract(_getDuration(reminderString)));
+                    reminders.add(
+                      dueDate.subtract(_getDuration(reminderString)),
+                    );
                   }
                 }
 
