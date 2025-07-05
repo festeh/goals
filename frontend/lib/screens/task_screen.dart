@@ -26,6 +26,16 @@ class _TaskScreenState extends State<TaskScreen> {
         .toList();
   }
 
+  List<Task> get _completedTasks {
+    final tasks = _tasksForProject.where((task) => task.completedAt != null).toList();
+    tasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+    return tasks;
+  }
+
+  List<Task> get _nonCompletedTasks {
+    return _tasksForProject.where((task) => task.completedAt == null).toList();
+  }
+
   Future<void> _sync() async {
     try {
       await ApiService.getTasks();
@@ -51,6 +61,15 @@ class _TaskScreenState extends State<TaskScreen> {
       setState(() {});
     } catch (e) {
       _showErrorDialog('Error deleting task: $e');
+    }
+  }
+
+  Future<void> _toggleComplete(Task task) async {
+    try {
+      await ApiService.completeTask(task.id!);
+      await _sync();
+    } catch (e) {
+      _showErrorDialog('Error completing task: $e');
     }
   }
 
@@ -121,64 +140,146 @@ class _TaskScreenState extends State<TaskScreen> {
             )
           : ListView.builder(
               padding: const EdgeInsets.all(8.0),
-              itemCount: _tasksForProject.length,
+              itemCount: _nonCompletedTasks.length + (_completedTasks.isNotEmpty ? _completedTasks.length + 1 : 0),
               itemBuilder: (context, index) {
-                final task = _tasksForProject[index];
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16.0),
-                    title: Text(
-                      task.description,
-                      style: Theme.of(context).textTheme.bodyLarge,
+                if (index < _nonCompletedTasks.length) {
+                  final task = _nonCompletedTasks[index];
+                  return Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (task.dueDate != null)
-                            Text(
-                                'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
-                          if (task.labels.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Wrap(
-                                spacing: 8.0,
-                                runSpacing: 4.0,
-                                children: task.labels
-                                    .map((label) => Chip(
-                                          label: Text(label),
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .secondary
-                                              .withOpacity(0.2),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                            side: BorderSide(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .secondary,
+                    child: ListTile(
+                      leading: Checkbox(
+                        value: task.completedAt != null,
+                        onChanged: (value) => _toggleComplete(task),
+                      ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      title: Text(
+                        task.description,
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (task.dueDate != null)
+                              Text(
+                                  'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
+                            if (task.labels.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 4.0,
+                                  children: task.labels
+                                      .map((label) => Chip(
+                                            label: Text(label),
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .secondary
+                                                .withOpacity(0.2),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              side: BorderSide(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
                                             ),
-                                          ),
-                                        ))
-                                    .toList(),
+                                          ))
+                                      .toList(),
+                                ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _deleteTask(task.id!),
                       ),
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () => _deleteTask(task.id!),
+                  );
+                } else if (index == _nonCompletedTasks.length && _completedTasks.isNotEmpty) {
+                  return Column(
+                    children: const [
+                      Divider(
+                        height: 32,
+                        thickness: 2,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                      Text('Completed tasks'),
+                    ],
+                  );
+                } else {
+                  final task = _completedTasks[index - _nonCompletedTasks.length - 1];
+                  return Card(
+                    elevation: 4,
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                );
+                    child: ListTile(
+                      leading: Checkbox(
+                        value: task.completedAt != null,
+                        onChanged: (value) => _toggleComplete(task),
+                      ),
+                      contentPadding: const EdgeInsets.all(16.0),
+                      title: Text(
+                        task.description,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      subtitle: Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (task.dueDate != null)
+                              Text(
+                                  'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
+                            if (task.labels.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Wrap(
+                                  spacing: 8.0,
+                                  runSpacing: 4.0,
+                                  children: task.labels
+                                      .map((label) => Chip(
+                                            label: Text(label),
+                                            backgroundColor: Theme.of(context)
+                                                .colorScheme
+                                                .secondary
+                                                .withOpacity(0.2),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              side: BorderSide(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .secondary,
+                                              ),
+                                            ),
+                                          ))
+                                      .toList(),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.delete_outline),
+                        onPressed: () => _deleteTask(task.id!),
+                      ),
+                    ),
+                  );
+                }
               },
             ),
       floatingActionButton: FloatingActionButton(

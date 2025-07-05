@@ -5,6 +5,7 @@ class Task {
   final DateTime? dueDate;
   final List<String> labels;
   final int order;
+  final DateTime? completedAt;
 
   Task({
     this.id,
@@ -13,6 +14,7 @@ class Task {
     this.dueDate,
     required this.labels,
     required this.order,
+    this.completedAt,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -23,6 +25,7 @@ class Task {
       dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
       labels: List<String>.from(json['labels'] ?? []),
       order: json['order'],
+      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at']) : null,
     );
   }
 
@@ -34,6 +37,7 @@ class Task {
       'due_date': dueDate?.toIso8601String(),
       'labels': labels,
       'order': order,
+      'completed_at': completedAt?.toIso8601String(),
     };
   }
 }

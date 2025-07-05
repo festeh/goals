@@ -16,7 +16,7 @@ type Task struct {
 	Order       int            `gorm:"default:0" json:"order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`
-	CompletedAt time.Time      `json:"completed_at"`
+	CompletedAt *time.Time     `json:"completed_at"`
 }
 
 type Project struct {

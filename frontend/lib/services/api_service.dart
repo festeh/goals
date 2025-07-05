@@ -194,4 +194,22 @@ class ApiService {
       rethrow;
     }
   }
+
+  static Future<void> completeTask(int id) async {
+    _logger.info('Completing task $id...');
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/tasks/$id/complete'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      if (response.statusCode != 200) {
+        _logger.warning('Failed to complete task $id: ${response.statusCode}');
+        throw Exception('Failed to complete task');
+      }
+      _logger.info('Task $id completed successfully.');
+    } catch (e) {
+      _logger.severe('Error completing task $id: $e');
+      rethrow;
+    }
+  }
 }
