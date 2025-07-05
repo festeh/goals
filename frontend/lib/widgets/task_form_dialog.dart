@@ -52,19 +52,22 @@ class TaskFormDialogState extends State<TaskFormDialog> {
     _descriptionController = TextEditingController(text: widget.task?.description ?? '');
     _labelsController = TextEditingController(text: widget.task?.labels.join(', ') ?? '');
     _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
-    if (widget.task?.dueDatetime != null) {
+    if (widget.task?.dueDate != null) {
+      _selectedDate = widget.task!.dueDate;
+    } else if (widget.task?.dueDatetime != null) {
       _selectedDate = widget.task!.dueDatetime;
       _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDatetime!);
     }
     if (widget.task != null) {
       _selectedReminders = widget.task!.reminders
-          .map((e) => _reminderStringFromDateTime(e, widget.task!.dueDatetime!))
+          .map((e) =>
+              _reminderStringFromDateTime(e, widget.task!.dueDatetime ?? widget.task!.dueDate!))
           .toList();
     }
   }
 
-  String _reminderStringFromDateTime(DateTime reminder, DateTime dueDatetime) {
-    final difference = dueDatetime.difference(reminder);
+  String _reminderStringFromDateTime(DateTime reminder, DateTime dueDate) {
+    final difference = dueDate.difference(reminder);
     if (difference.inDays >= 7) {
       return '${difference.inDays ~/ 7} week';
     } else if (difference.inDays > 0) {
@@ -239,15 +242,24 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                     .where((s) => s.isNotEmpty)
                     .toList();
 
-                DateTime? dateTime;
+                DateTime? dueDate;
+                DateTime? dueDatetime;
                 if (_selectedDate != null) {
-                  dateTime = DateTime(
-                    _selectedDate!.year,
-                    _selectedDate!.month,
-                    _selectedDate!.day,
-                    _selectedTime?.hour ?? 0,
-                    _selectedTime?.minute ?? 0,
-                  );
+                  if (_selectedTime != null) {
+                    dueDatetime = DateTime(
+                      _selectedDate!.year,
+                      _selectedDate!.month,
+                      _selectedDate!.day,
+                      _selectedTime!.hour,
+                      _selectedTime!.minute,
+                    );
+                  } else {
+                    dueDate = DateTime(
+                      _selectedDate!.year,
+                      _selectedDate!.month,
+                      _selectedDate!.day,
+                    );
+                  }
                 }
 
                 final tasksForProject = _cachingService.tasks
@@ -261,10 +273,15 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                     1;
 
                 List<DateTime> reminders = [];
-                if (dateTime != null) {
+                if (dueDatetime != null) {
                   for (final reminderString in _selectedReminders) {
                     reminders.add(
-                        dateTime.subtract(_getDuration(reminderString)));
+                        dueDatetime.subtract(_getDuration(reminderString)));
+                  }
+                } else if (dueDate != null) {
+                  for (final reminderString in _selectedReminders) {
+                    reminders
+                        .add(dueDate.subtract(_getDuration(reminderString)));
                   }
                 }
 
@@ -272,7 +289,8 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   id: widget.task?.id,
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
-                  dueDatetime: dateTime,
+                  dueDate: dueDate,
+                  dueDatetime: dueDatetime,
                   labels: labels,
                   order: widget.task?.order ?? newOrder,
                   completedAt: widget.task?.completedAt,

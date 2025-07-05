@@ -213,9 +213,12 @@ class TaskScreenState extends State<TaskScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                if (task.dueDatetime != null)
+                                if (task.dueDate != null)
                                   Text(
-                                      'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]}'),
+                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}')
+                                else if (task.dueDatetime != null)
+                                  Text(
+                                      'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]} ${TimeOfDay.fromDateTime(task.dueDatetime!).format(context)}'),
                                 if (task.labels.isNotEmpty)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 8.0),
@@ -302,9 +305,12 @@ class TaskScreenState extends State<TaskScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (task.dueDatetime != null)
+                              if (task.dueDate != null)
                                 Text(
-                                    'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]}'),
+                                    'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}')
+                              else if (task.dueDatetime != null)
+                                Text(
+                                    'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]} ${TimeOfDay.fromDateTime(task.dueDatetime!).format(context)}'),
                               if (task.labels.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 8.0),
