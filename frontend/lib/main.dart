@@ -4,6 +4,7 @@ import 'package:frontend/models/project.dart';
 import 'package:frontend/widgets/edit_project_dialog.dart';
 import 'package:frontend/widgets/error_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:tray_manager/tray_manager.dart';
 import 'widgets/add_project_dialog.dart';
 import 'widgets/project_list_widget.dart';
 import 'services/caching_service.dart';
@@ -11,8 +12,26 @@ import 'screens/task_screen.dart';
 import 'services/api_service.dart';
 import 'services/logging_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   LoggingService.setup();
+  await trayManager.setIcon(
+    'assets/infinite.png',
+  );
+  Menu menu = Menu(
+    items: [
+      MenuItem(
+        key: 'show_window',
+        label: 'Show Window',
+      ),
+      MenuItem.separator(),
+      MenuItem(
+        key: 'exit_app',
+        label: 'Exit App',
+      ),
+    ],
+  );
+  await trayManager.setContextMenu(menu);
   runApp(const MyApp());
 }
 
