@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/task.dart';
 import '../models/project.dart';
+import '../utils/value_wrapper.dart';
 import 'caching_service.dart';
 import 'logging_service.dart';
 
@@ -215,7 +216,7 @@ class ApiService {
     }
   }
 
-  static Future<Task> completeTask(int id) async {
+  static Future<void> completeTask(int id) async {
     _logger.info('Completing task $id...');
     try {
       final response = await http.post(
@@ -224,9 +225,9 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         _logger.info('Task $id completed successfully.');
-        final updatedTask = Task.fromJson(json.decode(response.body));
+        final task = _cachingService.tasks.firstWhere((task) => task.id == id);
+        final updatedTask = task.copyWith(completedAt: ValueWrapper(DateTime.now()));
         _cachingService.updateTask(updatedTask);
-        return updatedTask;
       } else {
         _logger.warning('Failed to complete task $id: ${response.statusCode}');
         throw Exception('Failed to complete task');
