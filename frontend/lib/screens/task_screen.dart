@@ -174,74 +174,80 @@ class _TaskScreenState extends State<TaskScreen> {
                 ],
               ),
             )
-          : ListView.builder(
+          : ReorderableListView.builder(
+              buildDefaultDragHandles: false,
               padding: const EdgeInsets.all(8.0),
               itemCount: _nonCompletedTasks.length +
                   (_completedTasks.isNotEmpty ? _completedTasks.length + 1 : 0),
               itemBuilder: (context, index) {
                 if (index < _nonCompletedTasks.length) {
                   final task = _nonCompletedTasks[index];
-                  return Card(
-                    elevation: 4,
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InkWell(
-                      onTap: () => _showEditTaskDialog(task),
-                      borderRadius: BorderRadius.circular(12),
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                      child: ListTile(
-                        leading: Checkbox(
-                          value: task.completedAt != null,
-                          onChanged: (value) => _toggleComplete(task),
-                        ),
-                        contentPadding: const EdgeInsets.all(16.0),
-                        title: Text(
-                          task.description,
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (task.dueDate != null)
-                                Text(
-                                    'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
-                              if (task.labels.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
-                                  child: Wrap(
-                                    spacing: 8.0,
-                                    runSpacing: 4.0,
-                                    children: task.labels
-                                        .map((label) => Chip(
-                                              label: Text(label),
-                                              backgroundColor: Theme.of(context)
-                                                  .colorScheme
-                                                  .secondary
-                                                  .withOpacity(0.2),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                side: BorderSide(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .secondary,
-                                                ),
-                                              ),
-                                            ))
-                                        .toList(),
-                                  ),
-                                ),
-                            ],
+                  return ReorderableDragStartListener(
+                    key: Key(task.id.toString()),
+                    index: index,
+                    child: Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        onTap: () => _showEditTaskDialog(task),
+                        borderRadius: BorderRadius.circular(12),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        child: ListTile(
+                          leading: Checkbox(
+                            value: task.completedAt != null,
+                            onChanged: (value) => _toggleComplete(task),
                           ),
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: () => _deleteTask(task.id!),
+                          contentPadding: const EdgeInsets.all(16.0),
+                          title: Text(
+                            task.description,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (task.dueDate != null)
+                                  Text(
+                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}'),
+                                if (task.labels.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Wrap(
+                                      spacing: 8.0,
+                                      runSpacing: 4.0,
+                                      children: task.labels
+                                          .map((label) => Chip(
+                                                label: Text(label),
+                                                backgroundColor: Theme.of(
+                                                        context)
+                                                    .colorScheme
+                                                    .secondary
+                                                    .withOpacity(0.2),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  side: BorderSide(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .secondary,
+                                                  ),
+                                                ),
+                                              ))
+                                          .toList(),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _deleteTask(task.id!),
+                          ),
                         ),
                       ),
                     ),
@@ -249,6 +255,7 @@ class _TaskScreenState extends State<TaskScreen> {
                 } else if (index == _nonCompletedTasks.length &&
                     _completedTasks.isNotEmpty) {
                   return Column(
+                    key: const Key('completed_tasks_header'),
                     children: const [
                       Divider(
                         height: 32,
@@ -263,6 +270,7 @@ class _TaskScreenState extends State<TaskScreen> {
                   final task =
                       _completedTasks[index - _nonCompletedTasks.length - 1];
                   return Card(
+                    key: Key(task.id.toString()),
                     elevation: 4,
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
                     shape: RoundedRectangleBorder(
@@ -331,6 +339,34 @@ class _TaskScreenState extends State<TaskScreen> {
                       ),
                     ),
                   );
+                }
+              },
+              onReorder: (oldIndex, newIndex) async {
+                if (oldIndex < _nonCompletedTasks.length &&
+                    newIndex < _nonCompletedTasks.length) {
+                  setState(() {
+                    if (newIndex > oldIndex) {
+                      newIndex -= 1;
+                    }
+                    final task = _nonCompletedTasks.removeAt(oldIndex);
+                    _nonCompletedTasks.insert(newIndex, task);
+
+                    final allTasks = _nonCompletedTasks + _completedTasks;
+                    for (int i = 0; i < allTasks.length; i++) {
+                      final task = allTasks[i];
+                      final updatedTask = task.copyWith(order: i);
+                      _cachingService.updateTask(updatedTask);
+                    }
+                  });
+
+                  try {
+                    await ApiService.reorderTasks(_cachingService.tasks
+                        .where((t) => t.projectId == widget.project!.id)
+                        .map((p) => p.id!)
+                        .toList());
+                  } catch (e) {
+                    _showErrorDialog('Error reordering tasks: $e');
+                  }
                 }
               },
             ),

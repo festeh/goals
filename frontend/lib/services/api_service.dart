@@ -195,6 +195,25 @@ class ApiService {
     }
   }
 
+  static Future<void> reorderTasks(List<int> taskIds) async {
+    _logger.info('Reordering tasks...', taskIds);
+    try {
+      final response = await http.put(
+        Uri.parse('$baseUrl/tasks-reorder'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(taskIds),
+      );
+      if (response.statusCode != 200) {
+        _logger.warning('Failed to reorder tasks: ${response.statusCode}');
+        throw Exception('Failed to reorder tasks');
+      }
+      _logger.info('Tasks reordered successfully.');
+    } catch (e) {
+      _logger.severe('Error reordering tasks: $e');
+      rethrow;
+    }
+  }
+
   static Future<void> completeTask(int id) async {
     _logger.info('Completing task $id...');
     try {
