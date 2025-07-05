@@ -1,3 +1,4 @@
+import 'package:frontend/utils/value_wrapper.dart';
 import 'package:frontend/widgets/task_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/error_dialog.dart';
@@ -67,37 +68,27 @@ class _TaskScreenState extends State<TaskScreen> {
   }
 
   Future<void> _toggleComplete(Task task) async {
-    final originalTask = task;
-    final isCompleted = task.completedAt != null;
-
-    // Start with the basic toggle of the completion status.
-    var updatedTask = task.copyWith(
-      completedAt: isCompleted ? null : DateTime.now(),
-      completedAtIsNull: isCompleted,
-    );
-
-    // If completing the task, also remove the "next" label if it exists.
-    if (!isCompleted && task.labels.contains('next')) {
-      final newLabels = List<String>.from(task.labels)..remove('next');
-      updatedTask = updatedTask.copyWith(labels: newLabels);
-    }
-
-    _cachingService.updateTask(updatedTask);
-    setState(() {});
-
+    // The API service will now handle the cache update.
+    // We just need to call the right endpoint and then refresh the UI.
     try {
-      if (isCompleted) {
-        // When un-completing, send the whole updated task object.
+      if (task.completedAt != null) {
+        // If we are "un-completing" a task, we need to send the full
+        // updated object to the standard update endpoint.
+        final updatedTask = task.copyWith(
+          completedAt: const ValueWrapper(null),
+        );
         await ApiService.updateTask(task.id!, updatedTask);
       } else {
-        // When completing, just hit the simple complete endpoint.
-        // The backend will handle its own "next" label removal.
+        // If we are completing a task, we just hit the dedicated endpoint.
+        // The backend will handle removing the "next" label.
         await ApiService.completeTask(task.id!);
       }
     } catch (e) {
-      _cachingService.updateTask(originalTask);
-      setState(() {});
       _showErrorDialog('Error toggling task completion: $e');
+      // No need to manually roll back, the cache was never touched on the client.
+    } finally {
+      // Ensure the UI always refreshes after the API call.
+      setState(() {});
     }
   }
 
