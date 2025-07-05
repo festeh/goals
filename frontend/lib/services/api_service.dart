@@ -198,7 +198,7 @@ class ApiService {
   static Future<void> completeTask(int id) async {
     _logger.info('Completing task $id...');
     try {
-      final response = await http.put(
+      final response = await http.post(
         Uri.parse('$baseUrl/tasks/$id/complete'),
         headers: {'Content-Type': 'application/json'},
       );
