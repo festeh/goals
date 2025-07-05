@@ -2,6 +2,7 @@ import 'package:frontend/widgets/completed_task_widget.dart';
 import 'package:frontend/widgets/task_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/widgets/error_dialog.dart';
+import 'package:frontend/widgets/task_widget.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
@@ -188,74 +189,11 @@ class TaskScreenState extends State<TaskScreen> {
                   return ReorderableDragStartListener(
                     key: Key(task.id.toString()),
                     index: index,
-                    child: Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 8.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: InkWell(
-                        onTap: () => _showEditTaskDialog(task),
-                        borderRadius: BorderRadius.circular(12),
-                        splashColor: Colors.transparent,
-                        highlightColor: Colors.transparent,
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: task.completedAt != null,
-                            onChanged: (value) => _toggleComplete(task),
-                          ),
-                          contentPadding: const EdgeInsets.all(16.0),
-                          title: Text(
-                            task.description,
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          subtitle: Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (task.dueDate != null)
-                                  Text(
-                                      'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}')
-                                else if (task.dueDatetime != null)
-                                  Text(
-                                      'Due: ${task.dueDatetime!.toLocal().toString().split(' ')[0]} ${TimeOfDay.fromDateTime(task.dueDatetime!).format(context)}'),
-                                if (task.labels.isNotEmpty)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 8.0),
-                                    child: Wrap(
-                                      spacing: 8.0,
-                                      runSpacing: 4.0,
-                                      children: task.labels
-                                          .map((label) => Chip(
-                                                label: Text(label),
-                                                backgroundColor: Theme.of(
-                                                        context)
-                                                    .colorScheme
-                                                    .secondary
-                                                    .withAlpha(51),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(8),
-                                                  side: BorderSide(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .secondary,
-                                                  ),
-                                                ),
-                                              ))
-                                          .toList(),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            onPressed: () => _deleteTask(task.id!),
-                          ),
-                        ),
-                      ),
+                    child: TaskWidget(
+                      task: task,
+                      onToggleComplete: _toggleComplete,
+                      onDelete: _deleteTask,
+                      onEdit: _showEditTaskDialog,
                     ),
                   );
                 } else if (index == _nonCompletedTasks.length &&
