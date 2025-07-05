@@ -213,8 +213,12 @@ func completeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update the task object in memory to reflect changes
+	task.CompletedAt = &now
+	task.Labels = updatedLabels
+
 	logger.Info("Successfully completed task").Uint("task_id", id).Send()
-	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(task)
 }
 
 func listProjects(w http.ResponseWriter, r *http.Request) {
