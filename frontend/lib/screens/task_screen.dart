@@ -59,6 +59,7 @@ class _TaskScreenState extends State<TaskScreen> {
       context: context,
       builder: (context) => AddTaskDialog(
         projects: _cachingService.projects,
+        selectedProject: widget.project,
         onTaskAdded: () {
           setState(() {});
         },
@@ -190,9 +191,13 @@ class _TaskScreenState extends State<TaskScreen> {
 
 class AddTaskDialog extends StatefulWidget {
   final List<Project> projects;
+  final Project? selectedProject;
   final VoidCallback onTaskAdded;
 
-  AddTaskDialog({required this.projects, required this.onTaskAdded});
+  AddTaskDialog(
+      {required this.projects,
+      this.selectedProject,
+      required this.onTaskAdded});
 
   @override
   _AddTaskDialogState createState() => _AddTaskDialogState();
@@ -204,7 +209,14 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
   final _labelsController = TextEditingController();
   int? _selectedProjectId;
   DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
   final CachingService _cachingService = CachingService();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedProjectId = widget.selectedProject?.id;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +281,21 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                     child:
                         Text(_selectedDate.toLocal().toString().split(' ')[0]),
                   ),
+                  const Text('Time: '),
+                  TextButton(
+                    onPressed: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: _selectedTime,
+                      );
+                      if (time != null) {
+                        setState(() {
+                          _selectedTime = time;
+                        });
+                      }
+                    },
+                    child: Text(_selectedTime.format(context)),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -308,10 +335,18 @@ class _AddTaskDialogState extends State<AddTaskDialog> {
                         : 0) +
                     1;
 
+                final dateTime = DateTime(
+                  _selectedDate.year,
+                  _selectedDate.month,
+                  _selectedDate.day,
+                  _selectedTime.hour,
+                  _selectedTime.minute,
+                );
+
                 final task = Task(
                   description: _descriptionController.text,
                   projectId: _selectedProjectId!,
-                  dueDate: _selectedDate,
+                  dueDate: dateTime,
                   labels: labels,
                   order: newOrder,
                 );
