@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/models/project.dart';
 import 'package:frontend/widgets/edit_project_dialog.dart';
 import 'package:frontend/widgets/error_dialog.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'widgets/add_project_dialog.dart';
 import 'widgets/project_list_widget.dart';
 import 'services/caching_service.dart';
@@ -33,14 +34,16 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF121212),
         cardColor: const Color(0xFF1E1E1E),
         useMaterial3: true,
-        textTheme: const TextTheme(
-          headlineSmall: TextStyle(
+        textTheme: GoogleFonts.interTextTheme(
+          Theme.of(context).textTheme,
+        ).copyWith(
+          headlineSmall: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
-          bodyLarge: TextStyle(fontSize: 16, color: Colors.white70),
-          bodyMedium: TextStyle(fontSize: 14, color: Colors.white60),
+          bodyLarge: const TextStyle(fontSize: 16, color: Colors.white),
+          bodyMedium: const TextStyle(fontSize: 14, color: Colors.white),
         ),
       ),
       localizationsDelegates: const [
