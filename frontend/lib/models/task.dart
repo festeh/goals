@@ -1,3 +1,5 @@
+import 'package:frontend/utils/value_wrapper.dart';
+
 class Task {
   final int? id;
   final String description;
@@ -45,20 +47,19 @@ class Task {
     int? id,
     String? description,
     int? projectId,
-    DateTime? dueDate,
+    ValueWrapper<DateTime?>? dueDate,
     List<String>? labels,
     int? order,
-    DateTime? completedAt,
-    bool completedAtIsNull = false,
+    ValueWrapper<DateTime?>? completedAt,
   }) {
     return Task(
       id: id ?? this.id,
       description: description ?? this.description,
       projectId: projectId ?? this.projectId,
-      dueDate: dueDate ?? this.dueDate,
+      dueDate: dueDate != null ? dueDate.value : this.dueDate,
       labels: labels ?? this.labels,
       order: order ?? this.order,
-      completedAt: completedAtIsNull ? null : (completedAt ?? this.completedAt),
+      completedAt: completedAt != null ? completedAt.value : this.completedAt,
     );
   }
 }
