@@ -177,16 +177,39 @@ func completeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := database.DB.Model(&database.Task{}).Where("id = ?", id).Update("completed_at", time.Now())
+	// First, fetch the task to check its labels
+	var task database.Task
+	result := database.DB.Where("id = ?", id).First(&task)
 	if result.Error != nil {
-		logger.Error("Failed to complete task").Uint("task_id", id).Err(result.Error).Send()
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.Error("Task not found").Uint("task_id", id).Send()
+			http.Error(w, "Task not found", http.StatusNotFound)
+			return
+		}
+		logger.Error("Failed to fetch task").Uint("task_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if result.RowsAffected == 0 {
-		logger.Error("Task not found").Uint("task_id", id).Send()
-		http.Error(w, "Task not found", http.StatusNotFound)
+	// Remove "next" label if present
+	var updatedLabels []string
+	for _, label := range task.Labels {
+		if label != "next" {
+			updatedLabels = append(updatedLabels, label)
+		}
+	}
+
+	// Update both completed_at and labels
+	now := time.Now()
+	updates := map[string]interface{}{
+		"completed_at": &now,
+		"labels":       updatedLabels,
+	}
+
+	result = database.DB.Model(&task).Where("id = ?", id).Updates(updates)
+	if result.Error != nil {
+		logger.Error("Failed to complete task").Uint("task_id", id).Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
 		return
 	}
 
