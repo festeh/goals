@@ -36,6 +36,16 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   final CachingService _cachingService = CachingService();
+  List<String> _selectedReminders = [];
+
+  final List<String> _reminderOptions = [
+    '5 minutes',
+    '30 minutes',
+    '1 hour',
+    '12 hours',
+    '1 day',
+    '1 week',
+  ];
 
   @override
   void initState() {
@@ -46,6 +56,26 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
     if (widget.task?.dueDate != null) {
       _selectedDate = widget.task!.dueDate;
       _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDate!);
+    }
+    if (widget.task != null) {
+      _selectedReminders = widget.task!.reminders
+          .map((e) => _reminderStringFromDateTime(e, widget.task!.dueDate!))
+          .toList();
+    }
+  }
+
+  String _reminderStringFromDateTime(DateTime reminder, DateTime dueDate) {
+    final difference = dueDate.difference(reminder);
+    if (difference.inDays >= 7) {
+      return '${difference.inDays ~/ 7} week';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays} day';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour';
+    } else if (difference.inMinutes >= 30) {
+      return '30 minutes';
+    } else {
+      return '5 minutes';
     }
   }
 
@@ -58,6 +88,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
                 controller: _descriptionController,
@@ -152,6 +183,31 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   hintText: 'urgent, work, personal',
                 ),
               ),
+              const SizedBox(height: 16),
+              const Text('Reminders', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: _reminderOptions.map((reminder) {
+                  final isEnabled = _selectedDate != null;
+                  return FilterChip(
+                    label: Text(reminder),
+                    selected: isEnabled && _selectedReminders.contains(reminder),
+                    onSelected: isEnabled
+                        ? (selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedReminders.add(reminder);
+                              } else {
+                                _selectedReminders.remove(reminder);
+                              }
+                            });
+                          }
+                        : null,
+                  );
+                }).toList(),
+              ),
             ],
           ),
         ),
@@ -192,6 +248,14 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                         : 0) +
                     1;
 
+                List<DateTime> reminders = [];
+                if (dateTime != null) {
+                  for (final reminderString in _selectedReminders) {
+                    reminders.add(
+                        dateTime.subtract(_getDuration(reminderString)));
+                  }
+                }
+
                 final task = Task(
                   id: widget.task?.id,
                   description: _descriptionController.text,
@@ -200,6 +264,7 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
                   labels: labels,
                   order: widget.task?.order ?? newOrder,
                   completedAt: widget.task?.completedAt,
+                  reminders: reminders,
                 );
 
                 await widget.onSave(task);
@@ -225,5 +290,26 @@ class _TaskFormDialogState extends State<TaskFormDialog> {
         ),
       ],
     );
+  }
+
+  Duration _getDuration(String reminderString) {
+    final parts = reminderString.split(' ');
+    final value = int.parse(parts[0]);
+    final unit = parts[1];
+
+    switch (unit) {
+      case 'minutes':
+        return Duration(minutes: value);
+      case 'hour':
+        return Duration(hours: value);
+      case 'hours':
+        return Duration(hours: value);
+      case 'day':
+        return Duration(days: value);
+      case 'week':
+        return Duration(days: value * 7);
+      default:
+        return Duration.zero;
+    }
   }
 }

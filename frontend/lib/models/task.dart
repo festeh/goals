@@ -8,6 +8,7 @@ class Task {
   final List<String> labels;
   final int order;
   final DateTime? completedAt;
+  final List<DateTime> reminders;
 
   Task({
     this.id,
@@ -17,6 +18,7 @@ class Task {
     required this.labels,
     required this.order,
     this.completedAt,
+    this.reminders = const [],
   });
 
   factory Task.fromJson(Map<String, dynamic> json) {
@@ -24,10 +26,19 @@ class Task {
       id: json['id'],
       description: json['description'],
       projectId: json['project_id'],
-      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
+      dueDate: json['due_date'] != null
+          ? DateTime.parse(json['due_date'])
+          : null,
       labels: List<String>.from(json['labels'] ?? []),
       order: json['order'],
-      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at']) : null,
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'])
+          : null,
+      reminders:
+          (json['reminders'] as List<dynamic>?)
+              ?.map((e) => DateTime.parse(e as String))
+              .toList() ??
+          [],
     );
   }
 
@@ -40,6 +51,7 @@ class Task {
       'labels': labels,
       'order': order,
       'completed_at': completedAt?.toIso8601String(),
+      'reminders': reminders.map((e) => e.toIso8601String()).toList(),
     };
   }
 
@@ -51,6 +63,7 @@ class Task {
     List<String>? labels,
     int? order,
     ValueWrapper<DateTime?>? completedAt,
+    List<DateTime>? reminders,
   }) {
     return Task(
       id: id ?? this.id,
@@ -60,6 +73,8 @@ class Task {
       labels: labels ?? this.labels,
       order: order ?? this.order,
       completedAt: completedAt != null ? completedAt.value : this.completedAt,
+      reminders: reminders ?? this.reminders,
     );
   }
 }
+
