@@ -69,18 +69,29 @@ class _TaskScreenState extends State<TaskScreen> {
   Future<void> _toggleComplete(Task task) async {
     final originalTask = task;
     final isCompleted = task.completedAt != null;
-    final updatedTask = task.copyWith(
+
+    // Start with the basic toggle of the completion status.
+    var updatedTask = task.copyWith(
       completedAt: isCompleted ? null : DateTime.now(),
       completedAtIsNull: isCompleted,
     );
+
+    // If completing the task, also remove the "next" label if it exists.
+    if (!isCompleted && task.labels.contains('next')) {
+      final newLabels = List<String>.from(task.labels)..remove('next');
+      updatedTask = updatedTask.copyWith(labels: newLabels);
+    }
 
     _cachingService.updateTask(updatedTask);
     setState(() {});
 
     try {
       if (isCompleted) {
+        // When un-completing, send the whole updated task object.
         await ApiService.updateTask(task.id!, updatedTask);
       } else {
+        // When completing, just hit the simple complete endpoint.
+        // The backend will handle its own "next" label removal.
         await ApiService.completeTask(task.id!);
       }
     } catch (e) {
@@ -342,33 +353,48 @@ class _TaskScreenState extends State<TaskScreen> {
                 }
               },
               onReorder: (oldIndex, newIndex) async {
-                if (oldIndex < _nonCompletedTasks.length &&
-                    newIndex < _nonCompletedTasks.length) {
-                  setState(() {
-                    if (newIndex > oldIndex) {
-                      newIndex -= 1;
-                    }
-                    final task = _nonCompletedTasks.removeAt(oldIndex);
-                    _nonCompletedTasks.insert(newIndex, task);
+                // Prevent reordering non-completed tasks into the completed list.
+                if (oldIndex >= _nonCompletedTasks.length ||
+                    newIndex > _nonCompletedTasks.length) {
+                  return;
+                }
 
-                    final allTasks = _nonCompletedTasks + _completedTasks;
-                    for (int i = 0; i < allTasks.length; i++) {
-                      final task = allTasks[i];
-                      final updatedTask = task.copyWith(order: i);
-                      _cachingService.updateTask(updatedTask);
-                    }
-                  });
+                // Adjust index for the remove/insert operation.
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
 
-                  try {
-                    await ApiService.reorderTasks(
-                        widget.project!.id!,
-                        _cachingService.tasks
-                            .where((t) => t.projectId == widget.project!.id)
-                            .map((p) => p.id!)
-                            .toList());
-                  } catch (e) {
-                    _showErrorDialog('Error reordering tasks: $e');
+                setState(() {
+                  // Get the list of non-completed tasks once and modify it.
+                  final reorderableTasks = _nonCompletedTasks;
+                  final task = reorderableTasks.removeAt(oldIndex);
+                  reorderableTasks.insert(newIndex, task);
+
+                  // Combine with completed tasks to get the full new order.
+                  final completedTasks = _completedTasks;
+                  final newlyOrderedTasks = reorderableTasks + completedTasks;
+
+                  // Update the order property and the central cache.
+                  for (int i = 0; i < newlyOrderedTasks.length; i++) {
+                    final taskToUpdate = newlyOrderedTasks[i];
+                    if (taskToUpdate.order != i) {
+                      _cachingService
+                          .updateTask(taskToUpdate.copyWith(order: i));
+                    }
                   }
+                });
+
+                // After the state is updated, persist the changes to the backend.
+                try {
+                  final allProjectTaskIds = _cachingService.tasks
+                      .where((t) => t.projectId == widget.project!.id)
+                      .map((t) => t.id!)
+                      .toList();
+                  await ApiService.reorderTasks(
+                      widget.project!.id!, allProjectTaskIds);
+                } catch (e) {
+                  _showErrorDialog('Error reordering tasks: $e');
+                  // NOTE: A full rollback of the UI change on API failure is not implemented.
                 }
               },
             ),
