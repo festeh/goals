@@ -117,7 +117,10 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 items: widget.projects.map((project) {
                   return DropdownMenuItem<int>(
                     value: project.id,
-                    child: Text(project.name),
+                    child: Text(
+                      project.name,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {
