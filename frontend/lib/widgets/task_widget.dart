@@ -21,9 +21,7 @@ class TaskWidget extends StatelessWidget {
     return Card(
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 4.0),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () => onEdit(task),
         borderRadius: BorderRadius.circular(12),
@@ -39,7 +37,8 @@ class TaskWidget extends StatelessWidget {
             task.description,
             style: Theme.of(context).textTheme.bodyLarge,
           ),
-          subtitle: (task.dueDate != null ||
+          subtitle:
+              (task.dueDate != null ||
                   task.dueDatetime != null ||
                   task.labels.isNotEmpty)
               ? Padding(
@@ -53,22 +52,22 @@ class TaskWidget extends StatelessWidget {
                           spacing: 8.0,
                           runSpacing: 4.0,
                           children: task.labels
-                              .map((label) => Chip(
-                                    label: Text(label),
-                                    backgroundColor: Theme.of(context)
-                                        .colorScheme
-                                        .secondary
-                                        .withAlpha(51),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(8),
-                                      side: BorderSide(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .secondary,
-                                      ),
+                              .map(
+                                (label) => Chip(
+                                  label: Text(label),
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary.withAlpha(51),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: BorderSide(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.secondary,
                                     ),
-                                  ))
+                                  ),
+                                ),
+                              )
                               .toList(),
                         ),
                     ],
