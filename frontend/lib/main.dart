@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:frontend/models/project.dart';
-import 'package:frontend/widgets/edit_project_dialog.dart';
-import 'package:frontend/widgets/error_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'widgets/add_project_dialog.dart';
@@ -12,24 +9,16 @@ import 'screens/task_screen.dart';
 import 'services/api_service.dart';
 import 'services/logging_service.dart';
 
+import 'models/project.dart';
+import 'widgets/edit_project_dialog.dart';
+import 'widgets/error_dialog.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   LoggingService.setup();
-  await trayManager.setIcon(
-    'assets/infinite.png',
-  );
+  await trayManager.setIcon('assets/infinite.png');
   Menu menu = Menu(
-    items: [
-      MenuItem(
-        key: 'show_window',
-        label: 'Show Window',
-      ),
-      MenuItem.separator(),
-      MenuItem(
-        key: 'exit_app',
-        label: 'Exit App',
-      ),
-    ],
+    items: [MenuItem(key: 'exit_app', label: 'Exit App')],
   );
   await trayManager.setContextMenu(menu);
   runApp(const MyApp());
@@ -41,7 +30,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Goals',
+      title: 'Dimaist',
       theme: ThemeData(
         brightness: Brightness.dark,
         primaryColor: const Color(0xFF6200EE),
@@ -53,17 +42,16 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF121212),
         cardColor: const Color(0xFF1E1E1E),
         useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(
-          Theme.of(context).textTheme,
-        ).copyWith(
-          headlineSmall: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          bodyLarge: const TextStyle(fontSize: 16, color: Colors.white),
-          bodyMedium: const TextStyle(fontSize: 14, color: Colors.white),
-        ),
+        textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme)
+            .copyWith(
+              headlineSmall: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              bodyLarge: const TextStyle(fontSize: 16, color: Colors.white),
+              bodyMedium: const TextStyle(fontSize: 14, color: Colors.white),
+            ),
       ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -106,10 +94,7 @@ class _MainScreenState extends State<MainScreen> {
   void _showErrorDialog(String error) {
     showDialog(
       context: context,
-      builder: (context) => ErrorDialog(
-        error: error,
-        onSync: _sync,
-      ),
+      builder: (context) => ErrorDialog(error: error, onSync: _sync),
     );
   }
 
@@ -215,15 +200,15 @@ class _MainScreenState extends State<MainScreen> {
                           if (newIndex > oldIndex) {
                             newIndex -= 1;
                           }
-                          final project =
-                              _cachingService.projects.removeAt(oldIndex);
+                          final project = _cachingService.projects.removeAt(
+                            oldIndex,
+                          );
                           _cachingService.projects.insert(newIndex, project);
                         });
                         try {
-                          await ApiService.reorderProjects(_cachingService
-                              .projects
-                              .map((p) => p.id!)
-                              .toList());
+                          await ApiService.reorderProjects(
+                            _cachingService.projects.map((p) => p.id!).toList(),
+                          );
                         } catch (e) {
                           _showErrorDialog('Error reordering projects: $e');
                         }
@@ -239,27 +224,29 @@ class _MainScreenState extends State<MainScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _cachingService.projects.isEmpty
-                    ? Center(
-                        child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.folder_open, size: 64),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No projects yet!',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Click the "+" button to add your first project.',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                        ],
-                      ))
-                    : TaskScreen(
-                        project: _cachingService.projects.isNotEmpty
-                            ? _cachingService.projects[_selectedIndex]
-                            : null),
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.folder_open, size: 64),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No projects yet!',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Click the "+" button to add your first project.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
+                  )
+                : TaskScreen(
+                    project: _cachingService.projects.isNotEmpty
+                        ? _cachingService.projects[_selectedIndex]
+                        : null,
+                  ),
           ),
         ],
       ),

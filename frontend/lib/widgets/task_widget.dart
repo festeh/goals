@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/widgets/due_widget.dart';
+import 'package:dimaist/widgets/due_widget.dart';
 import '../models/task.dart';
 
 class TaskWidget extends StatelessWidget {

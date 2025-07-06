@@ -1,8 +1,8 @@
-import 'package:frontend/widgets/completed_task_widget.dart';
-import 'package:frontend/widgets/task_form_dialog.dart';
+import 'package:dimaist/widgets/completed_task_widget.dart';
+import 'package:dimaist/widgets/task_form_dialog.dart';
 import 'package:flutter/material.dart';
-import 'package:frontend/widgets/error_dialog.dart';
-import 'package:frontend/widgets/task_widget.dart';
+import 'package:dimaist/widgets/error_dialog.dart';
+import 'package:dimaist/widgets/task_widget.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';

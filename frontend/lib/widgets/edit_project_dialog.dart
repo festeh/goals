@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/models/project.dart';
-import 'package:frontend/services/api_service.dart';
-import 'package:frontend/utils/color_utils.dart';
+import 'package:dimaist/models/project.dart';
+import 'package:dimaist/services/api_service.dart';
+import 'package:dimaist/utils/color_utils.dart';
 
 class EditProjectDialog extends StatefulWidget {
   final Project project;

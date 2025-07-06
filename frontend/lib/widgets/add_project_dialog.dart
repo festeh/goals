@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/services/caching_service.dart';
+import 'package:dimaist/services/caching_service.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
 import '../utils/color_utils.dart';

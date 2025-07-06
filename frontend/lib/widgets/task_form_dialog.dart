@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:frontend/models/project.dart';
-import 'package:frontend/models/task.dart';
-import 'package:frontend/services/api_service.dart';
-import 'package:frontend/services/caching_service.dart';
-import 'package:frontend/widgets/error_dialog.dart';
+import 'package:dimaist/models/project.dart';
+import 'package:dimaist/models/task.dart';
+import 'package:dimaist/services/api_service.dart';
+import 'package:dimaist/services/caching_service.dart';
+import 'package:dimaist/widgets/error_dialog.dart';
 
 class TaskFormDialog extends StatefulWidget {
   final Task? task;
@@ -281,6 +281,8 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                       _selectedDate!.year,
                       _selectedDate!.month,
                       _selectedDate!.day,
+                      23,
+                      59,
                     );
                   }
                 }

@@ -1,4 +1,4 @@
-import 'package:frontend/utils/value_wrapper.dart';
+import 'package:dimaist/utils/value_wrapper.dart';
 
 class Task {
   final int? id;
