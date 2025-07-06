@@ -1,4 +1,5 @@
 import 'package:dimaist/widgets/completed_task_widget.dart';
+import 'package:dimaist/widgets/custom_view_widget.dart';
 import 'package:dimaist/widgets/task_form_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:dimaist/widgets/error_dialog.dart';
@@ -11,8 +12,10 @@ import '../utils/value_wrapper.dart';
 
 class TaskScreen extends StatefulWidget {
   final Project? project;
+  final CustomView? customView;
 
-  const TaskScreen({super.key, required this.project});
+  const TaskScreen({super.key, this.project, this.customView})
+      : assert(project != null || customView != null);
 
   @override
   TaskScreenState createState() => TaskScreenState();
@@ -21,24 +24,32 @@ class TaskScreen extends StatefulWidget {
 class TaskScreenState extends State<TaskScreen> {
   final CachingService _cachingService = CachingService();
 
-  List<Task> get _tasksForProject {
-    if (widget.project == null) {
-      return [];
+  List<Task> get _tasks {
+    if (widget.project != null) {
+      return _cachingService.tasks
+          .where((task) => task.projectId == widget.project!.id)
+          .toList();
+    } else if (widget.customView?.name == 'Today') {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return _cachingService.tasks.where((task) {
+        if (task.dueDate == null) return false;
+        final taskDueDate =
+            DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
+        return taskDueDate.isAtSameMomentAs(today);
+      }).toList();
     }
-    return _cachingService.tasks
-        .where((task) => task.projectId == widget.project!.id)
-        .toList();
+    return [];
   }
 
   List<Task> get _completedTasks {
-    final tasks =
-        _tasksForProject.where((task) => task.completedAt != null).toList();
+    final tasks = _tasks.where((task) => task.completedAt != null).toList();
     tasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
     return tasks;
   }
 
   List<Task> get _nonCompletedTasks {
-    return _tasksForProject.where((task) => task.completedAt == null).toList();
+    return _tasks.where((task) => task.completedAt == null).toList();
   }
 
   Future<void> _sync() async {
@@ -70,26 +81,18 @@ class TaskScreenState extends State<TaskScreen> {
   }
 
   Future<void> _toggleComplete(Task task) async {
-    // The API service will now handle the cache update.
-    // We just need to call the right endpoint and then refresh the UI.
     try {
       if (task.completedAt != null) {
-        // If we are "un-completing" a task, we need to send the full
-        // updated object to the standard update endpoint.
         final updatedTask = task.copyWith(
           completedAt: const ValueWrapper(null),
         );
         await ApiService.updateTask(task.id!, updatedTask);
       } else {
-        // If we are completing a task, we just hit the dedicated endpoint.
-        // The backend will handle removing the "next" label.
         await ApiService.completeTask(task.id!);
       }
     } catch (e) {
       _showErrorDialog('Error toggling task completion: $e');
-      // No need to manually roll back, the cache was never touched on the client.
     } finally {
-      // Ensure the UI always refreshes after the API call.
       setState(() {});
     }
   }
@@ -126,40 +129,28 @@ class TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  String get _title {
+    if (widget.project != null) {
+      return 'Tasks for ${widget.project!.name}';
+    }
+    if (widget.customView != null) {
+      return widget.customView!.name;
+    }
+    return 'Tasks';
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (widget.project == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.folder_special, size: 64),
-              const SizedBox(height: 16),
-              Text(
-                'No Project Selected',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please select a project to see the tasks.',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Tasks for ${widget.project!.name}',
+          _title,
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: _tasksForProject.isEmpty
+      body: _tasks.isEmpty
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -167,14 +158,17 @@ class TaskScreenState extends State<TaskScreen> {
                   const Icon(Icons.check_circle_outline, size: 64),
                   const SizedBox(height: 16),
                   Text(
-                    'No tasks yet!',
+                    widget.customView?.name == 'Today'
+                        ? 'No tasks for today'
+                        : 'No tasks yet!',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    'Click the "+" button to add your first task.',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
+                  if (widget.customView?.name != 'Today')
+                    Text(
+                      'Click the "+" button to add your first task.',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                 ],
               ),
             )
@@ -223,28 +217,24 @@ class TaskScreenState extends State<TaskScreen> {
                 }
               },
               onReorder: (oldIndex, newIndex) async {
-                // Prevent reordering non-completed tasks into the completed list.
+                if (widget.project == null) return;
                 if (oldIndex >= _nonCompletedTasks.length ||
                     newIndex > _nonCompletedTasks.length) {
                   return;
                 }
 
-                // Adjust index for the remove/insert operation.
                 if (newIndex > oldIndex) {
                   newIndex -= 1;
                 }
 
                 setState(() {
-                  // Get the list of non-completed tasks once and modify it.
                   final reorderableTasks = _nonCompletedTasks;
                   final task = reorderableTasks.removeAt(oldIndex);
                   reorderableTasks.insert(newIndex, task);
 
-                  // Combine with completed tasks to get the full new order.
                   final completedTasks = _completedTasks;
                   final newlyOrderedTasks = reorderableTasks + completedTasks;
 
-                  // Update the order property and the central cache.
                   for (int i = 0; i < newlyOrderedTasks.length; i++) {
                     final taskToUpdate = newlyOrderedTasks[i];
                     if (taskToUpdate.order != i) {
@@ -254,7 +244,6 @@ class TaskScreenState extends State<TaskScreen> {
                   }
                 });
 
-                // After the state is updated, persist the changes to the backend.
                 try {
                   final allProjectTaskIds = _cachingService.tasks
                       .where((t) => t.projectId == widget.project!.id)
@@ -264,7 +253,6 @@ class TaskScreenState extends State<TaskScreen> {
                       widget.project!.id!, allProjectTaskIds);
                 } catch (e) {
                   _showErrorDialog('Error reordering tasks: $e');
-                  // NOTE: A full rollback of the UI change on API failure is not implemented.
                 }
               },
             ),

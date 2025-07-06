@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:dimaist/models/project.dart';
 import 'package:dimaist/widgets/custom_view_widget.dart';
-import 'package:dimaist/widgets/project_list_widget.dart';
 
 class LeftBar extends StatelessWidget {
-  final List<Project> projects;
-  final int selectedIndex;
-  final Function(int) onProjectSelected;
-  final Function(int, int) onReorder;
-  final Function(Project) onEdit;
-  final Function(int) onDelete;
+  final String? selectedView;
+  final Function(String) onCustomViewSelected;
   final VoidCallback onAddProject;
+  final Widget projectList;
 
   const LeftBar({
     super.key,
-    required this.projects,
-    required this.selectedIndex,
-    required this.onProjectSelected,
-    required this.onReorder,
-    required this.onEdit,
-    required this.onDelete,
+    required this.selectedView,
+    required this.onCustomViewSelected,
     required this.onAddProject,
+    required this.projectList,
   });
 
   @override
@@ -56,18 +48,11 @@ class LeftBar extends StatelessWidget {
               ),
             ),
             CustomViewWidget(
-              selectedIndex: selectedIndex,
-              onSelected: onProjectSelected,
+              selectedView: selectedView,
+              onSelected: onCustomViewSelected,
             ),
-            if (projects.isNotEmpty)
-              ProjectList(
-                projects: projects,
-                selectedIndex: selectedIndex,
-                onProjectSelected: onProjectSelected,
-                onReorder: onReorder,
-                onEdit: onEdit,
-                onDelete: onDelete,
-              ),
+            const Divider(),
+            Expanded(child: projectList),
           ],
         ),
       ),

@@ -1,8 +1,10 @@
+import 'package:dimaist/widgets/left_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'widgets/add_project_dialog.dart';
+import 'widgets/custom_view_widget.dart';
 import 'widgets/project_list_widget.dart';
 import 'services/caching_service.dart';
 import 'screens/task_screen.dart';
@@ -75,7 +77,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final CachingService _cachingService = CachingService();
-  int _selectedIndex = 0;
+  String? _selectedCustomView = 'Today';
+  int? _selectedProjectId;
   bool _isLoading = true;
 
   @override
@@ -140,10 +143,9 @@ class _MainScreenState extends State<MainScreen> {
     try {
       await ApiService.deleteProject(id);
       setState(() {
-        if (_cachingService.projects.isNotEmpty) {
-          _selectedIndex = 0;
-        } else {
-          _selectedIndex = -1;
+        if (_selectedProjectId == id) {
+          _selectedCustomView = 'Today';
+          _selectedProjectId = null;
         }
       });
     } catch (e) {
@@ -153,103 +155,77 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final projects = _cachingService.projects;
+    final selectedProjectIndex = _selectedProjectId != null
+        ? projects.indexWhere((p) => p.id == _selectedProjectId)
+        : -1;
+
     return Scaffold(
       body: Row(
         children: [
-          SizedBox(
-            width: 250,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardColor,
-                border: Border(
-                  right: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 1,
-                  ),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'My Projects',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline),
-                          onPressed: _showAddProjectDialog,
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_cachingService.projects.isNotEmpty)
-                    ProjectList(
-                      projects: _cachingService.projects,
-                      selectedIndex: _selectedIndex,
-                      onProjectSelected: (index) {
-                        setState(() {
-                          _selectedIndex = index;
-                        });
-                      },
-                      onReorder: (oldIndex, newIndex) async {
-                        setState(() {
-                          if (newIndex > oldIndex) {
-                            newIndex -= 1;
-                          }
-                          final project = _cachingService.projects.removeAt(
-                            oldIndex,
-                          );
-                          _cachingService.projects.insert(newIndex, project);
-                        });
-                        try {
-                          await ApiService.reorderProjects(
-                            _cachingService.projects.map((p) => p.id!).toList(),
-                          );
-                        } catch (e) {
-                          _showErrorDialog('Error reordering projects: $e');
-                        }
-                      },
-                      onEdit: _showEditProjectDialog,
-                      onDelete: _deleteProject,
-                    ),
-                ],
-              ),
+          LeftBar(
+            selectedView: _selectedCustomView,
+            onCustomViewSelected: (view) {
+              setState(() {
+                _selectedCustomView = view;
+                _selectedProjectId = null;
+              });
+            },
+            onAddProject: _showAddProjectDialog,
+            projectList: ProjectList(
+              projects: projects,
+              selectedIndex: selectedProjectIndex,
+              onProjectSelected: (index) {
+                setState(() {
+                  _selectedCustomView = null;
+                  _selectedProjectId = projects[index].id;
+                });
+              },
+              onReorder: (oldIndex, newIndex) async {
+                setState(() {
+                  if (newIndex > oldIndex) {
+                    newIndex -= 1;
+                  }
+                  final project = projects.removeAt(oldIndex);
+                  projects.insert(newIndex, project);
+                });
+                try {
+                  await ApiService.reorderProjects(
+                    projects.map((p) => p.id!).toList(),
+                  );
+                } catch (e) {
+                  _showErrorDialog('Error reordering projects: $e');
+                }
+              },
+              onEdit: _showEditProjectDialog,
+              onDelete: _deleteProject,
             ),
           ),
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _cachingService.projects.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.folder_open, size: 64),
-                        const SizedBox(height: 16),
-                        Text(
-                          'No projects yet!',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Click the "+" button to add your first project.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      ],
-                    ),
-                  )
-                : TaskScreen(
-                    project: _cachingService.projects.isNotEmpty
-                        ? _cachingService.projects[_selectedIndex]
-                        : null,
-                  ),
+                : _buildTaskScreen(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTaskScreen() {
+    if (_selectedCustomView != null) {
+      final view = CustomViewWidget.customViews
+          .firstWhere((v) => v.name == _selectedCustomView);
+      return TaskScreen(customView: view);
+    }
+
+    if (_selectedProjectId != null) {
+      final project = _cachingService.projects
+          .firstWhere((p) => p.id == _selectedProjectId);
+      return TaskScreen(project: project);
+    }
+
+    return const Center(
+      child: Text('Select a project or view'),
     );
   }
 }

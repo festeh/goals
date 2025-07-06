@@ -1,50 +1,65 @@
 import 'package:flutter/material.dart';
 
+class CustomView {
+  final String name;
+  final IconData icon;
+
+  const CustomView({required this.name, required this.icon});
+}
+
 class CustomViewWidget extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onSelected;
+  static const List<CustomView> customViews = [
+    CustomView(name: 'Today', icon: Icons.today),
+  ];
+
+  final String? selectedView;
+  final Function(String) onSelected;
 
   const CustomViewWidget({
     super.key,
-    required this.selectedIndex,
+    required this.selectedView,
     required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: selectedIndex == -1
-            ? Theme.of(context).highlightColor
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: InkWell(
-        onTap: () => onSelected(-1),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 16.0,
-            vertical: 12.0,
+    return Column(
+      children: customViews.map((view) {
+        final isSelected = selectedView == view.name;
+        return Container(
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Theme.of(context).highlightColor
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            children: [
-              const Icon(Icons.today, size: 24),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  'Today',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontWeight: selectedIndex == -1
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                ),
+          child: InkWell(
+            onTap: () => onSelected(view.name),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
               ),
-            ],
+              child: Row(
+                children: [
+                  Icon(view.icon, size: 24),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      view.name,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }).toList(),
     );
   }
 }
