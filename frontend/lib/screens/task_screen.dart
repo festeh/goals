@@ -33,7 +33,7 @@ class TaskScreenState extends State<TaskScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       return _cachingService.tasks.where((task) {
-        if (task.dueDate == null) return false;
+        if (task.dueDate == null || task.completedAt != null) return false;
         final taskDueDate =
             DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
         return taskDueDate.isAtSameMomentAs(today);
@@ -43,6 +43,9 @@ class TaskScreenState extends State<TaskScreen> {
   }
 
   List<Task> get _completedTasks {
+    if (widget.customView?.name == 'Today') {
+      return [];
+    }
     final tasks = _tasks.where((task) => task.completedAt != null).toList();
     tasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
     return tasks;
