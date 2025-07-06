@@ -9,6 +9,7 @@ class TaskFormDialog extends StatefulWidget {
   final Task? task;
   final List<Project> projects;
   final Project? selectedProject;
+  final DateTime? defaultDueDate;
   final Function(Task) onSave;
   final String title;
   final String submitButtonText;
@@ -18,6 +19,7 @@ class TaskFormDialog extends StatefulWidget {
     this.task,
     required this.projects,
     this.selectedProject,
+    this.defaultDueDate,
     required this.onSave,
     required this.title,
     required this.submitButtonText,
@@ -61,6 +63,8 @@ class TaskFormDialogState extends State<TaskFormDialog> {
     } else if (widget.task?.dueDatetime != null) {
       _selectedDate = widget.task!.dueDatetime;
       _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDatetime!);
+    } else if (widget.defaultDueDate != null) {
+      _selectedDate = widget.defaultDueDate;
     }
     if (widget.task != null) {
       _selectedReminders = widget.task!.reminders

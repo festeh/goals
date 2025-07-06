@@ -101,11 +101,24 @@ class TaskScreenState extends State<TaskScreen> {
   }
 
   void _showAddTaskDialog() {
+    Project? selectedProject = widget.project;
+    DateTime? defaultDueDate;
+
+    if (widget.customView?.name == 'Today') {
+      final inboxProject = _cachingService.projects.firstWhere(
+        (p) => p.name == 'Inbox',
+        orElse: () => _cachingService.projects.first,
+      );
+      selectedProject = inboxProject;
+      defaultDueDate = DateTime.now();
+    }
+
     showDialog(
       context: context,
       builder: (context) => TaskFormDialog(
         projects: _cachingService.projects,
-        selectedProject: widget.project,
+        selectedProject: selectedProject,
+        defaultDueDate: defaultDueDate,
         onSave: (task) async {
           await ApiService.createTask(task);
           setState(() {});
