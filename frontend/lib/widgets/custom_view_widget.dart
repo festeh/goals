@@ -11,6 +11,7 @@ class CustomView {
 class CustomViewWidget extends StatelessWidget {
   static final List<CustomView> customViews = [
     const CustomView(name: 'Today', icon: Icons.today),
+    const CustomView(name: 'Upcoming', icon: Icons.calendar_today),
     const CustomView(name: 'Next', icon: Icons.arrow_forward),
   ];
 
