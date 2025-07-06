@@ -38,6 +38,11 @@ class TaskScreenState extends State<TaskScreen> {
             DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
         return taskDueDate.isAtSameMomentAs(today);
       }).toList();
+    } else if (widget.customView?.name == 'Next') {
+      return _cachingService.tasks
+          .where(
+              (task) => task.labels.contains('next') && task.completedAt == null)
+          .toList();
     }
     return [];
   }

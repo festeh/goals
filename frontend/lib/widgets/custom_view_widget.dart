@@ -9,8 +9,9 @@ class CustomView {
 }
 
 class CustomViewWidget extends StatelessWidget {
-  static const List<CustomView> customViews = [
-    CustomView(name: 'Today', icon: Icons.today),
+  static final List<CustomView> customViews = [
+    const CustomView(name: 'Today', icon: Icons.today),
+    const CustomView(name: 'Next', icon: Icons.arrow_forward),
   ];
 
   final String? selectedView;
