@@ -111,31 +111,26 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              Theme(
-                data: Theme.of(context).copyWith(
-                  canvasColor: Theme.of(context).cardColor,
-                ),
-                child: DropdownButtonFormField<int>(
-                  value: _selectedProjectId,
-                  decoration: const InputDecoration(labelText: 'Project'),
-                  items: widget.projects.map((project) {
-                    return DropdownMenuItem<int>(
-                      value: project.id,
-                      child: Text(project.name),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedProjectId = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Please select a project';
-                    }
-                    return null;
-                  },
-                ),
+              DropdownButtonFormField<int>(
+                value: _selectedProjectId,
+                decoration: const InputDecoration(labelText: 'Project'),
+                items: widget.projects.map((project) {
+                  return DropdownMenuItem<int>(
+                    value: project.id,
+                    child: Text(project.name),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedProjectId = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please select a project';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               const Align(
