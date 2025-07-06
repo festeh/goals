@@ -37,7 +37,7 @@ class LeftBar extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'My Projects',
+                    'Dimaist',
                     style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   IconButton(
