@@ -24,6 +24,10 @@ class TaskScreen extends StatefulWidget {
 class TaskScreenState extends State<TaskScreen> {
   final CachingService _cachingService = CachingService();
 
+  void showAddTaskDialog() {
+    _showAddTaskDialog();
+  }
+
   List<Task> get _tasks {
     if (widget.project != null) {
       return _cachingService.tasks
