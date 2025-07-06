@@ -105,6 +105,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextFormField(
+                autofocus: true,
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 validator: (value) {
