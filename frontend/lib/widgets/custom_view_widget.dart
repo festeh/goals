@@ -1,3 +1,4 @@
+import 'package:dimaist/widgets/dynamic_calendar_icon.dart';
 import 'package:flutter/material.dart';
 
 class CustomView {
@@ -43,7 +44,10 @@ class CustomViewWidget extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(view.icon, size: 24),
+                  if (view.name == 'Today')
+                    const DynamicCalendarIcon()
+                  else
+                    Icon(view.icon, size: 24),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
