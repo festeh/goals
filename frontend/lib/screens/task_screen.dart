@@ -165,6 +165,24 @@ class TaskScreenState extends State<TaskScreen> {
     return FutureBuilder<List<Task>>(
       future: _tasks,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(
+                _title,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+            ),
+            body: const Center(child: CircularProgressIndicator()),
+            floatingActionButton: FloatingActionButton(
+              onPressed: _showAddTaskDialog,
+              tooltip: 'Add Task',
+              child: const Icon(Icons.add),
+            ),
+          );
+        }
         
         if (snapshot.hasError) {
           return Scaffold(
