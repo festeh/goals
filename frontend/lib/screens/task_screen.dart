@@ -7,7 +7,7 @@ import 'package:dimaist/widgets/task_widget.dart';
 import '../models/task.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
-import '../services/caching_service.dart';
+import '../services/app_database.dart';
 import '../utils/value_wrapper.dart';
 
 class TaskScreen extends StatefulWidget {
@@ -22,7 +22,7 @@ class TaskScreen extends StatefulWidget {
 }
 
 class TaskScreenState extends State<TaskScreen> {
-  final CachingService _cachingService = CachingService();
+  final AppDatabase _db = AppDatabase();
 
   void showAddTaskDialog() {
     _showAddTaskDialog();
@@ -30,13 +30,13 @@ class TaskScreenState extends State<TaskScreen> {
 
   Future<List<Task>> get _tasks async {
     if (widget.project != null && widget.project!.id != null) {
-      return await _cachingService.getTasksByProject(widget.project!.id!);
+      return await _db.getTasksByProject(widget.project!.id!);
     } else if (widget.customView?.name == 'Today') {
-      return await _cachingService.getTodayTasks();
+      return await _db.getTodayTasks();
     } else if (widget.customView?.name == 'Upcoming') {
-      return await _cachingService.getUpcomingTasks();
+      return await _db.getUpcomingTasks();
     } else if (widget.customView?.name == 'Next') {
-      return await _cachingService.getTasksByLabel('next');
+      return await _db.getTasksByLabel('next');
     }
     return [];
   }
@@ -93,7 +93,7 @@ class TaskScreenState extends State<TaskScreen> {
     DateTime? defaultDueDate;
 
     if (widget.customView?.name == 'Today') {
-      final projects = await _cachingService.projects;
+      final projects = await _db.allProjects;
       final inboxProject = projects.firstWhere(
         (p) => p.name == 'Inbox',
         orElse: () => projects.first,
@@ -105,7 +105,7 @@ class TaskScreenState extends State<TaskScreen> {
     showDialog(
       context: context,
       builder: (context) => FutureBuilder<List<Project>>(
-        future: _cachingService.projects,
+        future: _db.allProjects,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -130,7 +130,7 @@ class TaskScreenState extends State<TaskScreen> {
     showDialog(
       context: context,
       builder: (context) => FutureBuilder<List<Project>>(
-        future: _cachingService.projects,
+        future: _db.allProjects,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -165,11 +165,6 @@ class TaskScreenState extends State<TaskScreen> {
     return FutureBuilder<List<Task>>(
       future: _tasks,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
         
         if (snapshot.hasError) {
           return Scaffold(
@@ -281,13 +276,12 @@ class TaskScreenState extends State<TaskScreen> {
                     for (int i = 0; i < newlyOrderedTasks.length; i++) {
                       final taskToUpdate = newlyOrderedTasks[i];
                       if (taskToUpdate.order != i) {
-                        await _cachingService
-                            .updateTask(taskToUpdate.copyWith(order: i));
+                        await _db.updateTask(taskToUpdate.copyWith(order: i));
                       }
                     }
 
                     try {
-                      final allProjectTaskIds = await _cachingService.getTaskIdsByProject(widget.project!.id!);
+                      final allProjectTaskIds = await _db.getTaskIdsByProject(widget.project!.id!);
                       await ApiService.reorderTasks(
                           widget.project!.id!, allProjectTaskIds);
                     } catch (e) {

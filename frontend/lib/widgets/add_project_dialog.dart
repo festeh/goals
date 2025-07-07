@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:dimaist/services/caching_service.dart';
+import 'package:dimaist/services/app_database.dart';
 import '../models/project.dart';
 import '../services/api_service.dart';
 import '../utils/color_utils.dart';
@@ -17,7 +17,7 @@ class AddProjectDialogState extends State<AddProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   String? _selectedColor;
-  final CachingService _cachingService = CachingService();
+  final AppDatabase _db = AppDatabase();
 
   @override
   void initState() {
@@ -86,7 +86,7 @@ class AddProjectDialogState extends State<AddProjectDialog> {
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               try {
-                final projects = await _cachingService.projects;
+                final projects = await _db.allProjects;
                 final newOrder = (projects.isNotEmpty
                         ? projects
                             .map((p) => p.order)

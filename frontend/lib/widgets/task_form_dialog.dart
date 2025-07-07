@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dimaist/models/project.dart';
 import 'package:dimaist/models/task.dart';
 import 'package:dimaist/services/api_service.dart';
-import 'package:dimaist/services/caching_service.dart';
+import 'package:dimaist/services/app_database.dart';
 import 'package:dimaist/widgets/error_dialog.dart';
 
 class TaskFormDialog extends StatefulWidget {
@@ -37,7 +37,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
   int? _selectedProjectId;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  final CachingService _cachingService = CachingService();
+  final AppDatabase _db = AppDatabase();
   List<String> _selectedReminders = [];
 
   final List<String> _reminderOptions = [
@@ -307,7 +307,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   }
                 }
 
-                final tasksForProject = await _cachingService.getTasksByProject(_selectedProjectId!);
+                final tasksForProject = await _db.getTasksByProject(_selectedProjectId!);
                 final newOrder =
                     (tasksForProject.isNotEmpty
                         ? tasksForProject

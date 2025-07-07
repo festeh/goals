@@ -114,7 +114,14 @@ class ListOfDateTimeConverter extends TypeConverter<List<DateTime>?, String?> {
 
 @DriftDatabase(tables: [Projects, Tasks])
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  static AppDatabase? _instance;
+  
+  AppDatabase._internal() : super(_openConnection());
+  
+  factory AppDatabase() {
+    _instance ??= AppDatabase._internal();
+    return _instance!;
+  }
 
   @override
   int get schemaVersion => 1;
@@ -142,6 +149,12 @@ class AppDatabase extends _$AppDatabase {
   );
 
   Future<void> deleteProject(int id) => (delete(projects)..where((p) => p.id.equals(id))).go();
+  
+  Future<void> setProjects(List<project_model.Project> projectList) async {
+    for (var project in projectList) {
+      await insertProject(project);
+    }
+  }
 
   // Task methods
   Future<List<task_model.Task>> get allTasks => (select(tasks)..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
@@ -163,9 +176,14 @@ class AppDatabase extends _$AppDatabase {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final sevenDaysFromNow = today.add(const Duration(days: 7));
+    final tomorrow = today.add(const Duration(days: 1));
     
     return (select(tasks)
-      ..where((t) => t.completedAt.isNull() & t.dueDate.isNotNull() & t.dueDate.isBetweenValues(today.add(const Duration(days: 1)), sevenDaysFromNow))
+      ..where((t) {
+        final dueDateClause = t.dueDate.isNotNull() & t.dueDate.isBetweenValues(tomorrow, sevenDaysFromNow);
+        final dueDatetimeClause = t.dueDatetime.isNotNull() & t.dueDatetime.isBetweenValues(tomorrow, sevenDaysFromNow);
+        return t.completedAt.isNull() & (dueDateClause | dueDatetimeClause);
+      })
       ..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
   }
   
@@ -221,6 +239,12 @@ class AppDatabase extends _$AppDatabase {
   );
 
   Future<void> deleteTask(int id) => (delete(tasks)..where((t) => t.id.equals(id))).go();
+  
+  Future<void> setTasks(List<task_model.Task> taskList) async {
+    for (var task in taskList) {
+      await insertTask(task);
+    }
+  }
 }
 
 LazyDatabase _openConnection() {

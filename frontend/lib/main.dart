@@ -1,7 +1,6 @@
 import 'package:dimaist/widgets/left_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -9,7 +8,7 @@ import 'dart:io' show Platform;
 import 'widgets/add_project_dialog.dart';
 import 'widgets/custom_view_widget.dart';
 import 'widgets/project_list_widget.dart';
-import 'services/caching_service.dart';
+import 'services/app_database.dart';
 import 'screens/task_screen.dart';
 import 'services/api_service.dart';
 import 'services/logging_service.dart';
@@ -21,27 +20,6 @@ import 'widgets/error_dialog.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Global error handler to catch FormatExceptions
-  FlutterError.onError = (FlutterErrorDetails details) {
-    if (details.exception.toString().contains('FormatException')) {
-      print('🔥🔥🔥 FORMATEXCEPTION CAUGHT: ${details.exception}');
-      print('🔥🔥🔥 Stack trace: ${details.stack}');
-    }
-    print('🔥 Flutter Error caught: ${details.exception}');
-    print('🔥 Stack trace: ${details.stack}');
-    FlutterError.presentError(details);
-  };
-
-  // Catch errors in async operations  
-  PlatformDispatcher.instance.onError = (error, stack) {
-    if (error.toString().contains('FormatException')) {
-      print('🔥🔥🔥 FORMATEXCEPTION IN ASYNC: $error');
-      print('🔥🔥🔥 Stack trace: $stack');
-    }
-    print('🔥 Platform Error caught: $error');
-    print('🔥 Stack trace: $stack');
-    return true;
-  };
   
   LoggingService.setup();
   await trayManager.setIcon('assets/infinite.png');
@@ -102,7 +80,7 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final CachingService _cachingService = CachingService();
+  final AppDatabase _db = AppDatabase();
   GlobalKey<TaskScreenState>? _currentTaskScreenKey;
   String? _selectedCustomView = 'Today';
   int? _selectedProjectId;
@@ -128,9 +106,8 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _loadInitialData() async {
     try {
-      await _cachingService.loadFromDb();
-      final projects = await _cachingService.projects;
-      final hasAnyTasks = await _cachingService.hasAnyTasks();
+      final projects = await _db.allProjects;
+      final hasAnyTasks = await _db.hasAnyTasks();
       if (projects.isEmpty) {
         await ApiService.getProjects();
       }
@@ -195,7 +172,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Project>>(
-      future: _cachingService.projects,
+      future: _db.allProjects,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
