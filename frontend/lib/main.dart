@@ -176,7 +176,7 @@ class _MainScreenState extends State<MainScreen> {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: SizedBox.shrink(),
           );
         }
         

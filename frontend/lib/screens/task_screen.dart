@@ -108,7 +108,7 @@ class TaskScreenState extends State<TaskScreen> {
         future: _db.allProjects,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: SizedBox.shrink());
           }
           return TaskFormDialog(
             projects: snapshot.data ?? [],
@@ -133,7 +133,7 @@ class TaskScreenState extends State<TaskScreen> {
         future: _db.allProjects,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: SizedBox.shrink());
           }
           return TaskFormDialog(
             task: task,
