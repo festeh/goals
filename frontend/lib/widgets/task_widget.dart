@@ -45,7 +45,8 @@ class TaskWidget extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
                     children: [
-                      if (task.recurrence != null && task.recurrence!.isNotEmpty)
+                      if (task.recurrence != null &&
+                          task.recurrence!.isNotEmpty)
                         const Icon(Icons.repeat, size: 16),
                       const SizedBox(width: 8),
                       DueWidget(task: task),
