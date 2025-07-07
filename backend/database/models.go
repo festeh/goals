@@ -48,6 +48,7 @@ type Task struct {
 	DueDatetime *time.Time     `json:"due_datetime"`
 	Labels      pq.StringArray `gorm:"type:text[]" json:"labels"`
 	Reminders   TimeArray      `gorm:"type:timestamp[]" json:"reminders"`
+	Recurrence  string         `json:"recurrence"`
 	Order       int            `gorm:"default:0" json:"order"`
 	CreatedAt   time.Time      `json:"created_at"`
 	UpdatedAt   time.Time      `json:"updated_at"`

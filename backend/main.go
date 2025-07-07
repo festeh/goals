@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -105,6 +106,13 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate recurrence pattern
+	if err := utils.ValidateRecurrence(t.Recurrence); err != nil {
+		logger.Error("Invalid recurrence pattern").Str("recurrence", t.Recurrence).Err(err).Send()
+		http.Error(w, fmt.Sprintf("Invalid recurrence pattern: %s", err.Error()), http.StatusBadRequest)
+		return
+	}
+
 	// Set order if not provided
 	if t.Order == 0 {
 		var maxOrder int
@@ -177,8 +185,59 @@ func completeTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// First, fetch the task to check if it's recurring
+	var task database.Task
+	result := database.DB.Where("id = ?", id).First(&task)
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.Error("Task not found").Uint("task_id", id).Send()
+			http.Error(w, "Task not found", http.StatusNotFound)
+			return
+		}
+		logger.Error("Failed to fetch task").Uint("task_id", id).Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	now := time.Now()
-	result := database.DB.Model(&database.Task{}).Where("id = ?", id).Update("completed_at", &now)
+	updates := map[string]any{
+		"completed_at": &now,
+	}
+
+	// Handle recurring tasks
+	if task.Recurrence != "" {
+		// Calculate next due date/datetime
+		var currentDue *time.Time
+		if task.DueDatetime != nil {
+			currentDue = task.DueDatetime
+		} else if task.DueDate != nil {
+			currentDue = task.DueDate
+		}
+
+		nextDue, err := utils.CalculateNextDueDate(task.Recurrence, currentDue)
+		if err != nil {
+			logger.Error("Failed to calculate next due date").Str("recurrence", task.Recurrence).Err(err).Send()
+			http.Error(w, fmt.Sprintf("Failed to calculate next due date: %s", err.Error()), http.StatusInternalServerError)
+			return
+		}
+
+		if nextDue != nil {
+			// Update the appropriate due field
+			if task.DueDatetime != nil {
+				updates["due_datetime"] = nextDue
+			} else if task.DueDate != nil {
+				// For date-only, set to date part only
+				dateOnly := time.Date(nextDue.Year(), nextDue.Month(), nextDue.Day(), 0, 0, 0, 0, nextDue.Location())
+				updates["due_date"] = &dateOnly
+			}
+		}
+
+		// For recurring tasks, clear completed_at to keep them active
+		updates["completed_at"] = nil
+		logger.Info("Recurring task - updated due date and cleared completion").Uint("task_id", id).Send()
+	}
+
+	result = database.DB.Model(&task).Where("id = ?", id).Updates(updates)
 	if result.Error != nil {
 		logger.Error("Failed to complete task").Uint("task_id", id).Err(result.Error).Send()
 		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
