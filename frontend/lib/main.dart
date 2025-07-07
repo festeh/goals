@@ -265,7 +265,7 @@ class _MainScreenState extends State<MainScreen> {
                 ),
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? const Center()
                       : _buildTaskScreen(projects),
                 ),
               ],
