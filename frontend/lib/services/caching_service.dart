@@ -13,7 +13,20 @@ class CachingService {
   CachingService._internal();
 
   Future<List<Project>> get projects => _db.allProjects;
-  Future<List<Task>> get tasks => _db.allTasks;
+
+  // Task query methods
+  Future<List<Task>> getTasksByProject(int projectId) =>
+      _db.getTasksByProject(projectId);
+  Future<List<Task>> getTodayTasks() => _db.getTodayTasks();
+  Future<List<Task>> getUpcomingTasks() => _db.getUpcomingTasks();
+  Future<List<Task>> getTasksByLabel(String label) =>
+      _db.getTasksByLabel(label);
+  Future<Task?> getTaskById(int id) => _db.getTaskById(id);
+  Future<List<Task>> getIncompleteTasks() => _db.getIncompleteTasks();
+  Future<List<Task>> getCompletedTasks() => _db.getCompletedTasks();
+  Future<List<int>> getTaskIdsByProject(int projectId) =>
+      _db.getTaskIdsByProject(projectId);
+  Future<bool> hasAnyTasks() => _db.hasAnyTasks();
 
   Future<void> loadFromDb() async {
     // No longer needed - data is queried directly from database

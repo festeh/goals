@@ -13,10 +13,10 @@ class ApiService {
 
   static Future<List<Task>> getTasks() async {
     _logger.info('Fetching tasks...');
-    final cachedTasks = await _cachingService.tasks;
-    if (cachedTasks.isNotEmpty) {
-      _logger.info('Tasks loaded from cache.');
-      return cachedTasks;
+    final hasAnyTasks = await _cachingService.hasAnyTasks();
+    if (hasAnyTasks) {
+      _logger.info('Tasks already exist in cache.');
+      return [];
     }
     try {
       final response = await http.get(Uri.parse('$baseUrl/tasks'));
@@ -226,8 +226,8 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         _logger.info('Task $id completed successfully.');
-        final tasks = await _cachingService.tasks;
-        final task = tasks.firstWhere((task) => task.id == id);
+        final task = await _cachingService.getTaskById(id);
+        if (task == null) throw Exception('Task not found');
         final updatedTask = task.copyWith(completedAt: ValueWrapper(DateTime.now()));
         await _cachingService.updateTask(updatedTask);
       } else {

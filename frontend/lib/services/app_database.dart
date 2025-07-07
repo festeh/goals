@@ -145,6 +145,51 @@ class AppDatabase extends _$AppDatabase {
 
   // Task methods
   Future<List<task_model.Task>> get allTasks => (select(tasks)..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  
+  Future<List<task_model.Task>> getTasksByProject(int projectId) =>
+    (select(tasks)..where((t) => t.projectId.equals(projectId))..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  
+  Future<List<task_model.Task>> getTodayTasks() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final todayEnd = today.add(const Duration(days: 1));
+    
+    return (select(tasks)
+      ..where((t) => t.completedAt.isNull() & t.dueDate.isNotNull() & t.dueDate.isBetweenValues(DateTime(1900), todayEnd))
+      ..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  }
+  
+  Future<List<task_model.Task>> getUpcomingTasks() async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final sevenDaysFromNow = today.add(const Duration(days: 7));
+    
+    return (select(tasks)
+      ..where((t) => t.completedAt.isNull() & t.dueDate.isNotNull() & t.dueDate.isBetweenValues(today.add(const Duration(days: 1)), sevenDaysFromNow))
+      ..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  }
+  
+  Future<List<task_model.Task>> getTasksByLabel(String label) =>
+    (select(tasks)..where((t) => t.completedAt.isNull() & t.labels.like('%$label%'))..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  
+  Future<task_model.Task?> getTaskById(int id) =>
+    (select(tasks)..where((t) => t.id.equals(id))).getSingleOrNull();
+  
+  Future<List<task_model.Task>> getIncompleteTasks() =>
+    (select(tasks)..where((t) => t.completedAt.isNull())..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  
+  Future<List<task_model.Task>> getCompletedTasks() =>
+    (select(tasks)..where((t) => t.completedAt.isNotNull())..orderBy([(t) => OrderingTerm(expression: t.completedAt, mode: OrderingMode.desc)])).get();
+  
+  Future<List<int>> getTaskIdsByProject(int projectId) async {
+    final taskList = await (select(tasks)..where((t) => t.projectId.equals(projectId))..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+    return taskList.map((t) => t.id!).toList();
+  }
+  
+  Future<bool> hasAnyTasks() async {
+    final count = await (selectOnly(tasks)..addColumns([tasks.id.count()])).getSingle();
+    return count.read(tasks.id.count())! > 0;
+  }
 
   Future<void> insertTask(task_model.Task task) => into(tasks).insert(
     TasksCompanion.insert(

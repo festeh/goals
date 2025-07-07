@@ -307,10 +307,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   }
                 }
 
-                final allTasks = await _cachingService.tasks;
-                final tasksForProject = allTasks
-                    .where((task) => task.projectId == _selectedProjectId)
-                    .toList();
+                final tasksForProject = await _cachingService.getTasksByProject(_selectedProjectId!);
                 final newOrder =
                     (tasksForProject.isNotEmpty
                         ? tasksForProject

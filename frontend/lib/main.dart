@@ -130,11 +130,11 @@ class _MainScreenState extends State<MainScreen> {
     try {
       await _cachingService.loadFromDb();
       final projects = await _cachingService.projects;
-      final tasks = await _cachingService.tasks;
+      final hasAnyTasks = await _cachingService.hasAnyTasks();
       if (projects.isEmpty) {
         await ApiService.getProjects();
       }
-      if (tasks.isEmpty) {
+      if (!hasAnyTasks) {
         await ApiService.getTasks();
       }
       setState(() {

@@ -29,36 +29,14 @@ class TaskScreenState extends State<TaskScreen> {
   }
 
   Future<List<Task>> get _tasks async {
-    final allTasks = await _cachingService.tasks;
-    if (widget.project != null) {
-      return allTasks
-          .where((task) => task.projectId == widget.project!.id)
-          .toList();
+    if (widget.project != null && widget.project!.id != null) {
+      return await _cachingService.getTasksByProject(widget.project!.id!);
     } else if (widget.customView?.name == 'Today') {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      return allTasks.where((task) {
-        if (task.dueDate == null || task.completedAt != null) return false;
-        final taskDueDate =
-            DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
-        return taskDueDate.isBefore(today) || taskDueDate.isAtSameMomentAs(today);
-      }).toList();
+      return await _cachingService.getTodayTasks();
     } else if (widget.customView?.name == 'Upcoming') {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      final sevenDaysFromNow = today.add(const Duration(days: 7));
-      return allTasks.where((task) {
-        if (task.dueDate == null || task.completedAt != null) return false;
-        final taskDueDate =
-            DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
-        return taskDueDate.isAfter(today) &&
-            taskDueDate.isBefore(sevenDaysFromNow);
-      }).toList();
+      return await _cachingService.getUpcomingTasks();
     } else if (widget.customView?.name == 'Next') {
-      return allTasks
-          .where(
-              (task) => task.labels.contains('next') && task.completedAt == null)
-          .toList();
+      return await _cachingService.getTasksByLabel('next');
     }
     return [];
   }
@@ -309,11 +287,7 @@ class TaskScreenState extends State<TaskScreen> {
                     }
 
                     try {
-                      final allTasks = await _cachingService.tasks;
-                      final allProjectTaskIds = allTasks
-                          .where((t) => t.projectId == widget.project!.id)
-                          .map((t) => t.id!)
-                          .toList();
+                      final allProjectTaskIds = await _cachingService.getTaskIdsByProject(widget.project!.id!);
                       await ApiService.reorderTasks(
                           widget.project!.id!, allProjectTaskIds);
                     } catch (e) {
