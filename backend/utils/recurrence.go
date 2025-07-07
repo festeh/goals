@@ -52,7 +52,14 @@ func CalculateNextDueDate(recurrence string, currentDue *time.Time) (*time.Time,
 		return &next, nil
 	}
 
-	// Weekly patterns
+	// Weekly (same day next week)
+	weeklyPatterns := []string{"week", "weekly", "every week"}
+	if slices.Contains(weeklyPatterns, strings.ToLower(recurrence)) {
+		next := baseDate.AddDate(0, 0, 7)
+		return &next, nil
+	}
+
+	// Weekly patterns (specific weekdays)
 	weekdays := map[string]time.Weekday{
 		"sun": time.Sunday, "mon": time.Monday, "tue": time.Tuesday,
 		"wed": time.Wednesday, "thu": time.Thursday, "fri": time.Friday, "sat": time.Saturday,
