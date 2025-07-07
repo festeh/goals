@@ -175,12 +175,7 @@ class TaskScreenState extends State<TaskScreen> {
               backgroundColor: Colors.transparent,
               elevation: 0,
             ),
-            body: const Center(child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )),
-            // body: const Center(child: CircularProgressIndicator()),
+            body: const SizedBox.shrink(),
             floatingActionButton: FloatingActionButton(
               onPressed: _showAddTaskDialog,
               tooltip: 'Add Task',
