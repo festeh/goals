@@ -20,6 +20,19 @@ func ValidateRecurrence(recurrence string) error {
 	return err
 }
 
+// ValidateTaskRecurrence validates task recurrence including due date requirements
+func ValidateTaskRecurrence(recurrence string, dueDate, dueDatetime *time.Time) error {
+	if recurrence != "" {
+		// Check that at least one due date field is provided for recurring tasks
+		if dueDate == nil && dueDatetime == nil {
+			return fmt.Errorf("recurring task must have either due_date or due_datetime")
+		}
+		
+		return ValidateRecurrence(recurrence)
+	}
+	return nil
+}
+
 // CalculateNextDueDate calculates the next due date based on recurrence pattern
 func CalculateNextDueDate(recurrence string, currentDue *time.Time) (*time.Time, error) {
 	if recurrence == "" {

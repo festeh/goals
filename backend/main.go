@@ -107,9 +107,9 @@ func createTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate recurrence pattern
-	if err := utils.ValidateRecurrence(t.Recurrence); err != nil {
-		logger.Error("Invalid recurrence pattern").Str("recurrence", t.Recurrence).Err(err).Send()
-		http.Error(w, fmt.Sprintf("Invalid recurrence pattern: %s", err.Error()), http.StatusBadRequest)
+	if err := utils.ValidateTaskRecurrence(t.Recurrence, t.DueDate, t.DueDatetime); err != nil {
+		logger.Error("Invalid task recurrence").Str("recurrence", t.Recurrence).Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -143,6 +143,13 @@ func updateTask(w http.ResponseWriter, r *http.Request) {
 	logger.Info("Updating task").Uint("task_id", id).Interface("task", t).Send()
 	if err != nil {
 		logger.Error("Failed to decode task update request").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate recurrence pattern
+	if err := utils.ValidateTaskRecurrence(t.Recurrence, t.DueDate, t.DueDatetime); err != nil {
+		logger.Error("Invalid task recurrence").Str("recurrence", t.Recurrence).Err(err).Send()
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
