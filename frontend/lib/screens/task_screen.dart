@@ -40,7 +40,7 @@ class TaskScreenState extends State<TaskScreen> {
         if (task.dueDate == null || task.completedAt != null) return false;
         final taskDueDate =
             DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
-        return taskDueDate.isAtSameMomentAs(today);
+        return taskDueDate.isBefore(today) || taskDueDate.isAtSameMomentAs(today);
       }).toList();
     } else if (widget.customView?.name == 'Upcoming') {
       final now = DateTime.now();
