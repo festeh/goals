@@ -33,6 +33,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _descriptionController;
   late TextEditingController _labelsController;
+  late TextEditingController _recurrenceController;
   int? _selectedProjectId;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -56,6 +57,9 @@ class TaskFormDialogState extends State<TaskFormDialog> {
     );
     _labelsController = TextEditingController(
       text: widget.task?.labels.join(', ') ?? '',
+    );
+    _recurrenceController = TextEditingController(
+      text: widget.task?.recurrence ?? '',
     );
     _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
     if (widget.task?.dueDate != null) {
@@ -226,6 +230,14 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 ),
               ),
               const SizedBox(height: 16),
+              TextFormField(
+                controller: _recurrenceController,
+                decoration: const InputDecoration(
+                  labelText: 'Recurrence',
+                  hintText: 'daily, weekly, etc.',
+                ),
+              ),
+              const SizedBox(height: 16),
               const Text(
                 'Reminders',
                 style: TextStyle(fontWeight: FontWeight.bold),
@@ -331,6 +343,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   order: widget.task?.order ?? newOrder,
                   completedAt: widget.task?.completedAt,
                   reminders: reminders,
+                  recurrence: _recurrenceController.text,
                 );
 
                 await widget.onSave(task);

@@ -10,6 +10,7 @@ class Task {
   final int order;
   final DateTime? completedAt;
   final List<DateTime> reminders;
+  final String? recurrence;
 
   Task({
     this.id,
@@ -21,6 +22,7 @@ class Task {
     required this.order,
     this.completedAt,
     this.reminders = const [],
+    this.recurrence,
   }) : assert(
          dueDate == null || dueDatetime == null,
          'Cannot have both dueDate and dueDatetime',
@@ -47,6 +49,7 @@ class Task {
               ?.map((e) => DateTime.parse(e as String))
               .toList() ??
           [],
+      recurrence: json['recurrence'],
     );
   }
 
@@ -61,6 +64,7 @@ class Task {
       'order': order,
       'completed_at': completedAt?.toIso8601String(),
       'reminders': reminders.map((e) => e.toIso8601String()).toList(),
+      'recurrence': recurrence,
     };
   }
 
@@ -74,6 +78,7 @@ class Task {
     int? order,
     ValueWrapper<DateTime?>? completedAt,
     List<DateTime>? reminders,
+    String? recurrence,
   }) {
     return Task(
       id: id ?? this.id,
@@ -85,6 +90,7 @@ class Task {
       order: order ?? this.order,
       completedAt: completedAt != null ? completedAt.value : this.completedAt,
       reminders: reminders ?? this.reminders,
+      recurrence: recurrence ?? this.recurrence,
     );
   }
 }
