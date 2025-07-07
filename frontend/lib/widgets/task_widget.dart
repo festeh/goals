@@ -40,7 +40,9 @@ class TaskWidget extends StatelessWidget {
           subtitle:
               (task.dueDate != null ||
                   task.dueDatetime != null ||
-                  task.labels.isNotEmpty)
+                  (task.labels
+                      .where((label) => label.trim().isNotEmpty)
+                      .isNotEmpty))
               ? Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Row(
@@ -51,11 +53,14 @@ class TaskWidget extends StatelessWidget {
                       const SizedBox(width: 8),
                       DueWidget(task: task),
                       const SizedBox(width: 8),
-                      if (task.labels.isNotEmpty)
+                      if (task.labels
+                          .where((label) => label.trim().isNotEmpty)
+                          .isNotEmpty)
                         Wrap(
                           spacing: 8.0,
                           runSpacing: 4.0,
                           children: task.labels
+                              .where((label) => label.trim().isNotEmpty)
                               .map(
                                 (label) => Chip(
                                   label: Text(label),

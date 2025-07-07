@@ -13,15 +13,15 @@ class ApiService {
 
   static Future<List<Task>> getTasks() async {
     _logger.info('Fetching tasks...');
-    if (_cachingService.tasks.isNotEmpty) {
+    final cachedTasks = await _cachingService.tasks;
+    if (cachedTasks.isNotEmpty) {
       _logger.info('Tasks loaded from cache.');
-      return _cachingService.tasks;
+      return cachedTasks;
     }
     try {
       final response = await http.get(Uri.parse('$baseUrl/tasks'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        _logger.info('Tasks fetched successfully.');
         final tasks = data.map((json) => Task.fromJson(json)).toList();
         _cachingService.setTasks(tasks);
         return tasks;
@@ -96,9 +96,10 @@ class ApiService {
 
   static Future<List<Project>> getProjects() async {
     _logger.info('Fetching projects...');
-    if (_cachingService.projects.isNotEmpty) {
+    final cachedProjects = await _cachingService.projects;
+    if (cachedProjects.isNotEmpty) {
       _logger.info('Projects loaded from cache.');
-      return _cachingService.projects;
+      return cachedProjects;
     }
     try {
       final response = await http.get(Uri.parse('$baseUrl/projects'));
@@ -225,9 +226,10 @@ class ApiService {
       );
       if (response.statusCode == 200) {
         _logger.info('Task $id completed successfully.');
-        final task = _cachingService.tasks.firstWhere((task) => task.id == id);
+        final tasks = await _cachingService.tasks;
+        final task = tasks.firstWhere((task) => task.id == id);
         final updatedTask = task.copyWith(completedAt: ValueWrapper(DateTime.now()));
-        _cachingService.updateTask(updatedTask);
+        await _cachingService.updateTask(updatedTask);
       } else {
         _logger.warning('Failed to complete task $id: ${response.statusCode}');
         throw Exception('Failed to complete task');

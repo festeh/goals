@@ -6,10 +6,10 @@ class Task {
   final int projectId;
   final DateTime? dueDate;
   final DateTime? dueDatetime;
-  final List<String> labels;
+  final List<String>? _labels;
   final int order;
   final DateTime? completedAt;
-  final List<DateTime> reminders;
+  final List<DateTime>? _reminders;
   final String? recurrence;
 
   Task({
@@ -18,39 +18,89 @@ class Task {
     required this.projectId,
     this.dueDate,
     this.dueDatetime,
-    required this.labels,
+    List<String>? labels,
     required this.order,
     this.completedAt,
-    this.reminders = const [],
+    List<DateTime>? reminders,
     this.recurrence,
-  }) : assert(
+  }) : _labels = labels,
+       _reminders = reminders,
+       assert(
          dueDate == null || dueDatetime == null,
          'Cannot have both dueDate and dueDatetime',
        );
 
+  List<String> get labels => _labels ?? [];
+  List<DateTime> get reminders => _reminders ?? [];
+
+  static DateTime? _parseDate(String? dateStr) {
+    if (dateStr == null) return null;
+    
+    try {
+      String processedDateStr = dateStr;
+      
+      // Handle invalid dates like "0001-01-01T00:53:28+00:53"
+      if (dateStr.startsWith('0001-01-01')) {
+        return null;
+      }
+      
+      // Fix malformed timezone formats
+      if (dateStr.contains('+') && dateStr.length > 6) {
+        // Handle +00:53 format (should be +00:53:00 or just skip)
+        final tzMatch = RegExp(r'\+(\d{2}):(\d{2})$').firstMatch(dateStr);
+        if (tzMatch != null) {
+          final minutes = tzMatch.group(2)!;
+          // If it's not a standard timezone offset, convert to UTC
+          if (minutes != '00' && minutes != '30' && minutes != '45') {
+            processedDateStr = dateStr.replaceFirst(RegExp(r'\+\d{2}:\d{2}$'), 'Z');
+          }
+        }
+      }
+      
+      // Handle RFC3339 format like "2025-07-08 23:59:00+000"
+      // Convert to proper ISO 8601 format
+      if (dateStr.contains('+') && !dateStr.contains('T')) {
+        processedDateStr = dateStr.replaceFirst(' ', 'T');
+        // Fix timezone format: +000 -> +00:00
+        if (processedDateStr.endsWith('+000')) {
+          processedDateStr = processedDateStr.replaceFirst('+000', '+00:00');
+        }
+      }
+      
+      return DateTime.parse(processedDateStr);
+    } catch (e) {
+      // Fallback: try parsing as-is
+      try {
+        return DateTime.parse(dateStr);
+      } catch (e2) {
+        return null;
+      }
+    }
+  }
+
   factory Task.fromJson(Map<String, dynamic> json) {
-    return Task(
-      id: json['id'],
-      description: json['description'],
-      projectId: json['project_id'],
-      dueDate: json['due_date'] != null
-          ? DateTime.parse(json['due_date'])
-          : null,
-      dueDatetime: json['due_datetime'] != null
-          ? DateTime.parse(json['due_datetime'])
-          : null,
-      labels: List<String>.from(json['labels'] ?? []),
-      order: json['order'],
-      completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'])
-          : null,
-      reminders:
-          (json['reminders'] as List<dynamic>?)
-              ?.map((e) => DateTime.parse(e as String))
-              .toList() ??
-          [],
-      recurrence: json['recurrence'],
-    );
+    try {
+      return Task(
+        id: json['id'],
+        description: json['description'],
+        projectId: json['project_id'],
+        dueDate: _parseDate(json['due_date']),
+        dueDatetime: _parseDate(json['due_datetime']),
+        labels: json['labels'] != null ? List<String>.from(json['labels']) : [],
+        order: json['order'],
+        completedAt: _parseDate(json['completed_at']),
+        reminders: json['reminders'] != null 
+            ? (json['reminders'] as List<dynamic>)
+                .map((e) => _parseDate(e as String?))
+                .where((d) => d != null)
+                .cast<DateTime>()
+                .toList()
+            : [],
+        recurrence: json['recurrence'],
+      );
+    } catch (e) {
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {

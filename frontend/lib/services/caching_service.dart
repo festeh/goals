@@ -1,8 +1,10 @@
+import 'package:dimaist/services/app_database.dart' as db;
 import '../models/project.dart';
 import '../models/task.dart';
 
 class CachingService {
   static final CachingService _instance = CachingService._internal();
+  final db.AppDatabase _db = db.AppDatabase();
 
   factory CachingService() {
     return _instance;
@@ -10,50 +12,46 @@ class CachingService {
 
   CachingService._internal();
 
-  List<Project> projects = [];
-  List<Task> tasks = [];
+  Future<List<Project>> get projects => _db.allProjects;
+  Future<List<Task>> get tasks => _db.allTasks;
 
-  void setProjects(List<Project> projects) {
-    this.projects = projects;
-    this.projects.sort((a, b) => a.order.compareTo(b.order));
+  Future<void> loadFromDb() async {
+    // No longer needed - data is queried directly from database
   }
 
-  void setTasks(List<Task> tasks) {
-    this.tasks = tasks;
-    this.tasks.sort((a, b) => a.order.compareTo(b.order));
-  }
-
-  void addProject(Project project) {
-    projects.add(project);
-    projects.sort((a, b) => a.order.compareTo(b.order));
-  }
-
-  void updateProject(Project project) {
-    final index = projects.indexWhere((p) => p.id == project.id);
-    if (index != -1) {
-      projects[index] = project;
-      projects.sort((a, b) => a.order.compareTo(b.order));
+  Future<void> setProjects(List<Project> projects) async {
+    for (var project in projects) {
+      await _db.insertProject(project);
     }
   }
 
-  void deleteProject(int projectId) {
-    projects.removeWhere((p) => p.id == projectId);
-  }
-
-  void addTask(Task task) {
-    tasks.add(task);
-    tasks.sort((a, b) => a.order.compareTo(b.order));
-  }
-
-  void updateTask(Task task) {
-    final index = tasks.indexWhere((t) => t.id == task.id);
-    if (index != -1) {
-      tasks[index] = task;
-      tasks.sort((a, b) => a.order.compareTo(b.order));
+  Future<void> setTasks(List<Task> tasks) async {
+    for (var task in tasks) {
+      await _db.insertTask(task);
     }
   }
 
-  void deleteTask(int taskId) {
-    tasks.removeWhere((t) => t.id == taskId);
+  Future<void> addProject(Project project) async {
+    await _db.insertProject(project);
+  }
+
+  Future<void> updateProject(Project project) async {
+    await _db.updateProject(project);
+  }
+
+  Future<void> deleteProject(int projectId) async {
+    await _db.deleteProject(projectId);
+  }
+
+  Future<void> addTask(Task task) async {
+    await _db.insertTask(task);
+  }
+
+  Future<void> updateTask(Task task) async {
+    await _db.updateTask(task);
+  }
+
+  Future<void> deleteTask(int taskId) async {
+    await _db.deleteTask(taskId);
   }
 }

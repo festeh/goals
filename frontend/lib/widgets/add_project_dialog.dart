@@ -7,13 +7,13 @@ import '../utils/color_utils.dart';
 class AddProjectDialog extends StatefulWidget {
   final VoidCallback onProjectAdded;
 
-  AddProjectDialog({required this.onProjectAdded});
+  const AddProjectDialog({super.key, required this.onProjectAdded});
 
   @override
-  _AddProjectDialogState createState() => _AddProjectDialogState();
+  AddProjectDialogState createState() => AddProjectDialogState();
 }
 
-class _AddProjectDialogState extends State<AddProjectDialog> {
+class AddProjectDialogState extends State<AddProjectDialog> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   String? _selectedColor;
@@ -86,8 +86,9 @@ class _AddProjectDialogState extends State<AddProjectDialog> {
           onPressed: () async {
             if (_formKey.currentState!.validate()) {
               try {
-                final newOrder = (_cachingService.projects.isNotEmpty
-                        ? _cachingService.projects
+                final projects = await _cachingService.projects;
+                final newOrder = (projects.isNotEmpty
+                        ? projects
                             .map((p) => p.order)
                             .reduce((a, b) => a > b ? a : b)
                         : 0) +

@@ -56,7 +56,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
       text: widget.task?.description ?? '',
     );
     _labelsController = TextEditingController(
-      text: widget.task?.labels.join(', ') ?? '',
+      text: widget.task?.labels?.join(', ') ?? '',
     );
     _recurrenceController = TextEditingController(
       text: widget.task?.recurrence ?? '',
@@ -72,13 +72,13 @@ class TaskFormDialogState extends State<TaskFormDialog> {
     }
     if (widget.task != null) {
       _selectedReminders = widget.task!.reminders
-          .map(
+          ?.map(
             (e) => _reminderStringFromDateTime(
               e,
               widget.task!.dueDatetime ?? widget.task!.dueDate!,
             ),
           )
-          .toList();
+          .toList() ?? [];
     }
   }
 
@@ -307,7 +307,8 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                   }
                 }
 
-                final tasksForProject = _cachingService.tasks
+                final allTasks = await _cachingService.tasks;
+                final tasksForProject = allTasks
                     .where((task) => task.projectId == _selectedProjectId)
                     .toList();
                 final newOrder =

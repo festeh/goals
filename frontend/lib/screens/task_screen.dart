@@ -28,15 +28,16 @@ class TaskScreenState extends State<TaskScreen> {
     _showAddTaskDialog();
   }
 
-  List<Task> get _tasks {
+  Future<List<Task>> get _tasks async {
+    final allTasks = await _cachingService.tasks;
     if (widget.project != null) {
-      return _cachingService.tasks
+      return allTasks
           .where((task) => task.projectId == widget.project!.id)
           .toList();
     } else if (widget.customView?.name == 'Today') {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
-      return _cachingService.tasks.where((task) {
+      return allTasks.where((task) {
         if (task.dueDate == null || task.completedAt != null) return false;
         final taskDueDate =
             DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
@@ -46,7 +47,7 @@ class TaskScreenState extends State<TaskScreen> {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final sevenDaysFromNow = today.add(const Duration(days: 7));
-      return _cachingService.tasks.where((task) {
+      return allTasks.where((task) {
         if (task.dueDate == null || task.completedAt != null) return false;
         final taskDueDate =
             DateTime(task.dueDate!.year, task.dueDate!.month, task.dueDate!.day);
@@ -54,7 +55,7 @@ class TaskScreenState extends State<TaskScreen> {
             taskDueDate.isBefore(sevenDaysFromNow);
       }).toList();
     } else if (widget.customView?.name == 'Next') {
-      return _cachingService.tasks
+      return allTasks
           .where(
               (task) => task.labels.contains('next') && task.completedAt == null)
           .toList();
@@ -62,18 +63,7 @@ class TaskScreenState extends State<TaskScreen> {
     return [];
   }
 
-  List<Task> get _completedTasks {
-    if (widget.customView?.name == 'Today') {
-      return [];
-    }
-    final tasks = _tasks.where((task) => task.completedAt != null).toList();
-    tasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
-    return tasks;
-  }
-
-  List<Task> get _nonCompletedTasks {
-    return _tasks.where((task) => task.completedAt == null).toList();
-  }
+  // These getters are now handled directly in the FutureBuilder
 
   Future<void> _sync() async {
     try {
@@ -120,14 +110,15 @@ class TaskScreenState extends State<TaskScreen> {
     }
   }
 
-  void _showAddTaskDialog() {
+  void _showAddTaskDialog() async {
     Project? selectedProject = widget.project;
     DateTime? defaultDueDate;
 
     if (widget.customView?.name == 'Today') {
-      final inboxProject = _cachingService.projects.firstWhere(
+      final projects = await _cachingService.projects;
+      final inboxProject = projects.firstWhere(
         (p) => p.name == 'Inbox',
-        orElse: () => _cachingService.projects.first,
+        orElse: () => projects.first,
       );
       selectedProject = inboxProject;
       defaultDueDate = DateTime.now();
@@ -135,16 +126,24 @@ class TaskScreenState extends State<TaskScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => TaskFormDialog(
-        projects: _cachingService.projects,
-        selectedProject: selectedProject,
-        defaultDueDate: defaultDueDate,
-        onSave: (task) async {
-          await ApiService.createTask(task);
-          setState(() {});
+      builder: (context) => FutureBuilder<List<Project>>(
+        future: _cachingService.projects,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return TaskFormDialog(
+            projects: snapshot.data ?? [],
+            selectedProject: selectedProject,
+            defaultDueDate: defaultDueDate,
+            onSave: (task) async {
+              await ApiService.createTask(task);
+              setState(() {});
+            },
+            title: 'Add New Task',
+            submitButtonText: 'Add',
+          );
         },
-        title: 'Add New Task',
-        submitButtonText: 'Add',
       ),
     );
   }
@@ -152,15 +151,23 @@ class TaskScreenState extends State<TaskScreen> {
   void _showEditTaskDialog(Task task) {
     showDialog(
       context: context,
-      builder: (context) => TaskFormDialog(
-        task: task,
-        projects: _cachingService.projects,
-        onSave: (updatedTask) async {
-          await ApiService.updateTask(task.id!, updatedTask);
-          setState(() {});
+      builder: (context) => FutureBuilder<List<Project>>(
+        future: _cachingService.projects,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return TaskFormDialog(
+            task: task,
+            projects: snapshot.data ?? [],
+            onSave: (updatedTask) async {
+              await ApiService.updateTask(task.id!, updatedTask);
+              setState(() {});
+            },
+            title: 'Edit Task',
+            submitButtonText: 'Save',
+          );
         },
-        title: 'Edit Task',
-        submitButtonText: 'Save',
       ),
     );
   }
@@ -177,126 +184,151 @@ class TaskScreenState extends State<TaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          _title,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: _tasks.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle_outline, size: 64),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.customView?.name == 'Today'
-                        ? 'No tasks for today'
-                        : 'No tasks yet!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  if (widget.customView?.name != 'Today')
-                    Text(
-                      'Click the "+" button to add your first task.',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                ],
-              ),
-            )
-          : ReorderableListView.builder(
-              buildDefaultDragHandles: false,
-              padding: const EdgeInsets.all(8.0),
-              itemCount: _nonCompletedTasks.length +
-                  (_completedTasks.isNotEmpty ? _completedTasks.length + 1 : 0),
-              itemBuilder: (context, index) {
-                if (index < _nonCompletedTasks.length) {
-                  final task = _nonCompletedTasks[index];
-                  return ReorderableDragStartListener(
-                    key: Key(task.id.toString()),
-                    index: index,
-                    child: TaskWidget(
-                      task: task,
-                      onToggleComplete: _toggleComplete,
-                      onDelete: _deleteTask,
-                      onEdit: _showEditTaskDialog,
-                    ),
-                  );
-                } else if (index == _nonCompletedTasks.length &&
-                    _completedTasks.isNotEmpty) {
-                  return Column(
-                    key: const Key('completed_tasks_header'),
-                    children: const [
-                      Divider(
-                        height: 32,
-                        thickness: 2,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                      Text('Completed tasks'),
-                    ],
-                  );
-                } else {
-                  final task =
-                      _completedTasks[index - _nonCompletedTasks.length - 1];
-                  return CompletedTaskWidget(
-                    key: Key(task.id.toString()),
-                    task: task,
-                    onToggleComplete: _toggleComplete,
-                    onDelete: _deleteTask,
-                    onEdit: _showEditTaskDialog,
-                  );
-                }
-              },
-              onReorder: (oldIndex, newIndex) async {
-                if (widget.project == null) return;
-                if (oldIndex >= _nonCompletedTasks.length ||
-                    newIndex > _nonCompletedTasks.length) {
-                  return;
-                }
-
-                if (newIndex > oldIndex) {
-                  newIndex -= 1;
-                }
-
-                setState(() {
-                  final reorderableTasks = _nonCompletedTasks;
-                  final task = reorderableTasks.removeAt(oldIndex);
-                  reorderableTasks.insert(newIndex, task);
-
-                  final completedTasks = _completedTasks;
-                  final newlyOrderedTasks = reorderableTasks + completedTasks;
-
-                  for (int i = 0; i < newlyOrderedTasks.length; i++) {
-                    final taskToUpdate = newlyOrderedTasks[i];
-                    if (taskToUpdate.order != i) {
-                      _cachingService
-                          .updateTask(taskToUpdate.copyWith(order: i));
-                    }
-                  }
-                });
-
-                try {
-                  final allProjectTaskIds = _cachingService.tasks
-                      .where((t) => t.projectId == widget.project!.id)
-                      .map((t) => t.id!)
-                      .toList();
-                  await ApiService.reorderTasks(
-                      widget.project!.id!, allProjectTaskIds);
-                } catch (e) {
-                  _showErrorDialog('Error reordering tasks: $e');
-                }
-              },
+    return FutureBuilder<List<Task>>(
+      future: _tasks,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Error: ${snapshot.error}'),
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTaskDialog,
-        tooltip: 'Add Task',
-        child: const Icon(Icons.add),
-      ),
+          );
+        }
+        
+        final tasks = snapshot.data ?? [];
+        final nonCompletedTasks = tasks.where((task) => task.completedAt == null).toList();
+        final completedTasks = widget.customView?.name == 'Today' 
+            ? <Task>[]
+            : tasks.where((task) => task.completedAt != null).toList();
+        completedTasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
+        
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              _title,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+          ),
+          body: tasks.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.check_circle_outline, size: 64),
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.customView?.name == 'Today'
+                            ? 'No tasks for today'
+                            : 'No tasks yet!',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 8),
+                      if (widget.customView?.name != 'Today')
+                        Text(
+                          'Click the "+" button to add your first task.',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                    ],
+                  ),
+                )
+              : ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: nonCompletedTasks.length +
+                      (completedTasks.isNotEmpty ? completedTasks.length + 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index < nonCompletedTasks.length) {
+                      final task = nonCompletedTasks[index];
+                      return ReorderableDragStartListener(
+                        key: Key(task.id.toString()),
+                        index: index,
+                        child: TaskWidget(
+                          task: task,
+                          onToggleComplete: _toggleComplete,
+                          onDelete: _deleteTask,
+                          onEdit: _showEditTaskDialog,
+                        ),
+                      );
+                    } else if (index == nonCompletedTasks.length &&
+                        completedTasks.isNotEmpty) {
+                      return Column(
+                        key: const Key('completed_tasks_header'),
+                        children: const [
+                          Divider(
+                            height: 32,
+                            thickness: 2,
+                            indent: 16,
+                            endIndent: 16,
+                          ),
+                          Text('Completed tasks'),
+                        ],
+                      );
+                    } else {
+                      final task =
+                          completedTasks[index - nonCompletedTasks.length - 1];
+                      return CompletedTaskWidget(
+                        key: Key(task.id.toString()),
+                        task: task,
+                        onToggleComplete: _toggleComplete,
+                        onDelete: _deleteTask,
+                        onEdit: _showEditTaskDialog,
+                      );
+                    }
+                  },
+                  onReorder: (oldIndex, newIndex) async {
+                    if (widget.project == null) return;
+                    if (oldIndex >= nonCompletedTasks.length ||
+                        newIndex > nonCompletedTasks.length) {
+                      return;
+                    }
+
+                    if (newIndex > oldIndex) {
+                      newIndex -= 1;
+                    }
+
+                    final reorderableTasks = List<Task>.from(nonCompletedTasks);
+                    final task = reorderableTasks.removeAt(oldIndex);
+                    reorderableTasks.insert(newIndex, task);
+
+                    final newlyOrderedTasks = reorderableTasks + completedTasks;
+
+                    for (int i = 0; i < newlyOrderedTasks.length; i++) {
+                      final taskToUpdate = newlyOrderedTasks[i];
+                      if (taskToUpdate.order != i) {
+                        await _cachingService
+                            .updateTask(taskToUpdate.copyWith(order: i));
+                      }
+                    }
+
+                    try {
+                      final allTasks = await _cachingService.tasks;
+                      final allProjectTaskIds = allTasks
+                          .where((t) => t.projectId == widget.project!.id)
+                          .map((t) => t.id!)
+                          .toList();
+                      await ApiService.reorderTasks(
+                          widget.project!.id!, allProjectTaskIds);
+                    } catch (e) {
+                      _showErrorDialog('Error reordering tasks: $e');
+                    }
+                    setState(() {});
+                  },
+                ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _showAddTaskDialog,
+            tooltip: 'Add Task',
+            child: const Icon(Icons.add),
+          ),
+        );
+      },
     );
   }
 }

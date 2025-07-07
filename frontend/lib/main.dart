@@ -1,6 +1,7 @@
 import 'package:dimaist/widgets/left_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:tray_manager/tray_manager.dart';
@@ -19,6 +20,29 @@ import 'widgets/error_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Global error handler to catch FormatExceptions
+  FlutterError.onError = (FlutterErrorDetails details) {
+    if (details.exception.toString().contains('FormatException')) {
+      print('🔥🔥🔥 FORMATEXCEPTION CAUGHT: ${details.exception}');
+      print('🔥🔥🔥 Stack trace: ${details.stack}');
+    }
+    print('🔥 Flutter Error caught: ${details.exception}');
+    print('🔥 Stack trace: ${details.stack}');
+    FlutterError.presentError(details);
+  };
+
+  // Catch errors in async operations  
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (error.toString().contains('FormatException')) {
+      print('🔥🔥🔥 FORMATEXCEPTION IN ASYNC: $error');
+      print('🔥🔥🔥 Stack trace: $stack');
+    }
+    print('🔥 Platform Error caught: $error');
+    print('🔥 Stack trace: $stack');
+    return true;
+  };
+  
   LoggingService.setup();
   await trayManager.setIcon('assets/infinite.png');
   Menu menu = Menu(
@@ -79,8 +103,7 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   final CachingService _cachingService = CachingService();
-  final GlobalKey<TaskScreenState> _taskScreenKey =
-      GlobalKey<TaskScreenState>();
+  GlobalKey<TaskScreenState>? _currentTaskScreenKey;
   String? _selectedCustomView = 'Today';
   int? _selectedProjectId;
   bool _isLoading = true;
@@ -91,24 +114,29 @@ class _MainScreenState extends State<MainScreen> {
     _loadInitialData();
   }
 
-  Future<void> _sync() async {
-    setState(() {
-      _isLoading = true;
-    });
-    await _loadInitialData();
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   void _showErrorDialog(String error) {
     showDialog(
       context: context,
-      builder: (context) => ErrorDialog(error: error, onSync: _sync),
+      builder: (context) => ErrorDialog(error: error, onSync: () {}),
     );
   }
 
   Future<void> _loadInitialData() async {
     try {
-      await ApiService.getProjects();
-      await ApiService.getTasks();
+      await _cachingService.loadFromDb();
+      final projects = await _cachingService.projects;
+      final tasks = await _cachingService.tasks;
+      if (projects.isEmpty) {
+        await ApiService.getProjects();
+      }
+      if (tasks.isEmpty) {
+        await ApiService.getTasks();
+      }
       setState(() {
         _isLoading = false;
       });
@@ -166,105 +194,133 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final projects = _cachingService.projects;
-    final selectedProjectIndex = _selectedProjectId != null
-        ? projects.indexWhere((p) => p.id == _selectedProjectId)
-        : -1;
-
-    return Focus(
-      autofocus: true,
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent) {
-          final isControlPressed = HardwareKeyboard.instance.isControlPressed;
-          final isAltPressed = HardwareKeyboard.instance.isAltPressed;
-          final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-          final isMetaPressed = HardwareKeyboard.instance.isMetaPressed;
-
-          if (!isControlPressed &&
-              !isAltPressed &&
-              !isShiftPressed &&
-              !isMetaPressed) {
-            if (event.logicalKey == LogicalKeyboardKey.keyN &&
-                Platform.isLinux) {
-              _taskScreenKey.currentState?.showAddTaskDialog();
-              return KeyEventResult.handled;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyT) {
-              _setSelectedCustomView('Today');
-              return KeyEventResult.handled;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyU) {
-              _setSelectedCustomView('Upcoming');
-              return KeyEventResult.handled;
-            }
-            if (event.logicalKey == LogicalKeyboardKey.keyE) {
-              _setSelectedCustomView('Next');
-              return KeyEventResult.handled;
-            }
-          }
+    return FutureBuilder<List<Project>>(
+      future: _cachingService.projects,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
-        return KeyEventResult.ignored;
+        
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Text('Error: ${snapshot.error}'),
+            ),
+          );
+        }
+        
+        final projects = snapshot.data ?? [];
+        final selectedProjectIndex = _selectedProjectId != null
+            ? projects.indexWhere((p) => p.id == _selectedProjectId)
+            : -1;
+
+        return Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            if (event is KeyDownEvent) {
+              final isControlPressed = HardwareKeyboard.instance.isControlPressed;
+              final isAltPressed = HardwareKeyboard.instance.isAltPressed;
+              final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+              final isMetaPressed = HardwareKeyboard.instance.isMetaPressed;
+
+              if (!isControlPressed &&
+                  !isAltPressed &&
+                  !isShiftPressed &&
+                  !isMetaPressed) {
+                if (event.logicalKey == LogicalKeyboardKey.keyN &&
+                    Platform.isLinux) {
+                  _currentTaskScreenKey?.currentState?.showAddTaskDialog();
+                  return KeyEventResult.handled;
+                }
+                if (event.logicalKey == LogicalKeyboardKey.keyT) {
+                  _setSelectedCustomView('Today');
+                  return KeyEventResult.handled;
+                }
+                if (event.logicalKey == LogicalKeyboardKey.keyU) {
+                  _setSelectedCustomView('Upcoming');
+                  return KeyEventResult.handled;
+                }
+                if (event.logicalKey == LogicalKeyboardKey.keyE) {
+                  _setSelectedCustomView('Next');
+                  return KeyEventResult.handled;
+                }
+              }
+            }
+            return KeyEventResult.ignored;
+          },
+          child: Scaffold(
+            body: Row(
+              children: [
+                LeftBar(
+                  selectedView: _selectedCustomView,
+                  onCustomViewSelected: _setSelectedCustomView,
+                  onAddProject: _showAddProjectDialog,
+                  projectList: ProjectList(
+                    projects: projects,
+                    selectedIndex: selectedProjectIndex,
+                    onProjectSelected: (index) {
+                      setState(() {
+                        _selectedCustomView = null;
+                        _selectedProjectId = projects[index].id;
+                      });
+                    },
+                    onReorder: (oldIndex, newIndex) async {
+                      final updatedProjects = List<Project>.from(projects);
+                      if (newIndex > oldIndex) {
+                        newIndex -= 1;
+                      }
+                      final project = updatedProjects.removeAt(oldIndex);
+                      updatedProjects.insert(newIndex, project);
+                      try {
+                        await ApiService.reorderProjects(
+                          updatedProjects.map((p) => p.id!).toList(),
+                        );
+                        setState(() {}); // Refresh the UI
+                      } catch (e) {
+                        _showErrorDialog('Error reordering projects: $e');
+                      }
+                    },
+                    onEdit: _showEditProjectDialog,
+                    onDelete: _deleteProject,
+                  ),
+                ),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _buildTaskScreen(projects),
+                ),
+              ],
+            ),
+          ),
+        );
       },
-      child: Scaffold(
-        body: Row(
-          children: [
-            LeftBar(
-              selectedView: _selectedCustomView,
-              onCustomViewSelected: _setSelectedCustomView,
-              onAddProject: _showAddProjectDialog,
-              projectList: ProjectList(
-                projects: projects,
-                selectedIndex: selectedProjectIndex,
-                onProjectSelected: (index) {
-                  setState(() {
-                    _selectedCustomView = null;
-                    _selectedProjectId = projects[index].id;
-                  });
-                },
-                onReorder: (oldIndex, newIndex) async {
-                  setState(() {
-                    if (newIndex > oldIndex) {
-                      newIndex -= 1;
-                    }
-                    final project = projects.removeAt(oldIndex);
-                    projects.insert(newIndex, project);
-                  });
-                  try {
-                    await ApiService.reorderProjects(
-                      projects.map((p) => p.id!).toList(),
-                    );
-                  } catch (e) {
-                    _showErrorDialog('Error reordering projects: $e');
-                  }
-                },
-                onEdit: _showEditProjectDialog,
-                onDelete: _deleteProject,
-              ),
-            ),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildTaskScreen(),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildTaskScreen() {
+  Widget _buildTaskScreen(List<Project> projects) {
     if (_selectedCustomView != null) {
       final view = CustomViewWidget.customViews
           .firstWhere((v) => v.name == _selectedCustomView);
-      return TaskScreen(key: _taskScreenKey, customView: view);
+      _currentTaskScreenKey = GlobalKey<TaskScreenState>();
+      return TaskScreen(
+        key: _currentTaskScreenKey, 
+        customView: view
+      );
     }
 
     if (_selectedProjectId != null) {
-      final project = _cachingService.projects
+      final project = projects
           .firstWhere((p) => p.id == _selectedProjectId);
-      return TaskScreen(key: _taskScreenKey, project: project);
+      _currentTaskScreenKey = GlobalKey<TaskScreenState>();
+      return TaskScreen(
+        key: _currentTaskScreenKey, 
+        project: project
+      );
     }
 
+    _currentTaskScreenKey = null;
     return const Center(
       child: Text('Select a project or view'),
     );
