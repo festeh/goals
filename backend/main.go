@@ -73,6 +73,9 @@ func main() {
 	// Reordering routes (separate to avoid conflicts)
 	r.Put("/projects-reorder", reorderProjects)
 
+	// Sync route
+	r.Get("/sync", syncData)
+
 	logger.Info("Starting server on :3000").Send()
 	err = http.ListenAndServe(":3000", r)
 	if err != nil {
@@ -408,4 +411,76 @@ func reorderTasks(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("Successfully reordered tasks").Uint("project_id", id).Int("count", len(taskIDs)).Send()
 	w.WriteHeader(http.StatusOK)
+}
+
+type SyncResponse struct {
+	Projects  []database.Project `json:"projects"`
+	Tasks     []database.Task    `json:"tasks"`
+	SyncToken string             `json:"sync_token"`
+}
+
+func syncData(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Syncing data").Send()
+
+	syncToken := r.URL.Query().Get("sync_token")
+	
+	var projects []database.Project
+	var tasks []database.Task
+	
+	// Parse sync token if provided
+	var syncTime time.Time
+	if syncToken != "" {
+		var err error
+		syncTime, err = time.Parse(time.RFC3339, syncToken)
+		if err != nil {
+			logger.Error("Invalid sync token format").Str("sync_token", syncToken).Err(err).Send()
+			http.Error(w, "Invalid sync token format", http.StatusBadRequest)
+			return
+		}
+		logger.Info("Syncing from timestamp").Time("sync_time", syncTime).Send()
+	}
+	
+	// Query projects modified after sync token
+	projectQuery := database.DB.Preload("Tasks")
+	if syncToken != "" {
+		projectQuery = projectQuery.Where("updated_at > ?", syncTime)
+	}
+	
+	result := projectQuery.Find(&projects)
+	if result.Error != nil {
+		logger.Error("Failed to retrieve projects").Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	// Query tasks modified after sync token
+	taskQuery := database.DB.Preload("Project")
+	if syncToken != "" {
+		taskQuery = taskQuery.Where("updated_at > ?", syncTime)
+	}
+	
+	result = taskQuery.Find(&tasks)
+	if result.Error != nil {
+		logger.Error("Failed to retrieve tasks").Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+	
+	// Generate new sync token (current timestamp)
+	newSyncToken := time.Now().Format(time.RFC3339)
+	
+	response := SyncResponse{
+		Projects:  projects,
+		Tasks:     tasks,
+		SyncToken: newSyncToken,
+	}
+	
+	logger.Info("Successfully synced data").
+		Int("projects", len(projects)).
+		Int("tasks", len(tasks)).
+		Str("new_sync_token", newSyncToken).
+		Send()
+	
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
