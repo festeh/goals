@@ -36,16 +36,8 @@ class ListOfStringConverter extends TypeConverter<List<String>?, String?> {
   const ListOfStringConverter();
   @override
   List<String>? fromSql(String? fromDb) {
-    print('ListOfStringConverter.fromSql: fromDb = $fromDb');
     if (fromDb == null) return null;
-    try {
-      final result = fromDb.split(',');
-      print('ListOfStringConverter.fromSql: result = $result');
-      return result;
-    } catch (e) {
-      print('ListOfStringConverter.fromSql: error = $e');
-      return null;
-    }
+    return fromDb.split(',');
   }
 
   @override
@@ -105,20 +97,12 @@ class ListOfDateTimeConverter extends TypeConverter<List<DateTime>?, String?> {
   
   @override
   List<DateTime>? fromSql(String? fromDb) {
-    print('ListOfDateTimeConverter.fromSql: fromDb = $fromDb');
     if (fromDb == null || fromDb.trim().isEmpty) return null;
-    try {
-      final result = fromDb.split(',')
-          .map((e) => _parseDate(e.trim()))
-          .where((d) => d != null)
-          .cast<DateTime>()
-          .toList();
-      print('ListOfDateTimeConverter.fromSql: result = $result');
-      return result;
-    } catch (e) {
-      print('ListOfDateTimeConverter.fromSql: error = $e');
-      return null;
-    }
+    return fromDb.split(',')
+        .map((e) => _parseDate(e.trim()))
+        .where((d) => d != null)
+        .cast<DateTime>()
+        .toList();
   }
 
   @override
