@@ -1,7 +1,8 @@
 import 'dart:convert';
+import 'package:dimaist/models/project.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
-import '../models/project.dart';
 import '../utils/value_wrapper.dart';
 import 'app_database.dart';
 import 'logging_service.dart';
@@ -11,26 +12,80 @@ class ApiService {
   static final _logger = LoggingService.logger;
   static final AppDatabase _db = AppDatabase();
 
-  static Future<List<Task>> getTasks() async {
-    _logger.info('Fetching tasks...');
-    final hasAnyTasks = await _db.hasAnyTasks();
-    if (hasAnyTasks) {
-      _logger.info('Tasks already exist in cache.');
-      return [];
+  static Future<void> syncData() async {
+    _logger.info('Syncing data...');
+    final prefs = await SharedPreferences.getInstance();
+    final syncToken = prefs.getString('sync_token');
+
+    Uri uri = Uri.parse('$baseUrl/sync');
+    if (syncToken != null) {
+      uri = uri.replace(queryParameters: {'sync_token': syncToken});
+      _logger.info('Syncing with token: $syncToken');
+    } else {
+      _logger.info('No sync token found, performing full sync.');
     }
+
     try {
-      final response = await http.get(Uri.parse('$baseUrl/tasks'));
+      final response = await http.get(uri);
+
       if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        final tasks = data.map((json) => Task.fromJson(json)).toList();
-        await _db.setTasks(tasks);
-        return tasks;
+        print('ApiService.syncData: Response body: ${response.body}');
+        final data = json.decode(response.body);
+        print('ApiService.syncData: Parsed data: $data');
+        
+        final projectsData = data['projects'] as List?;
+        print('ApiService.syncData: Projects data: $projectsData');
+        final projects = (projectsData ?? []).map((p) {
+          print('ApiService.syncData: Processing project: $p');
+          try {
+            return Project.fromJson(p);
+          } catch (e) {
+            print('ApiService.syncData: Error processing project $p: $e');
+            rethrow;
+          }
+        }).toList();
+        
+        final tasksData = data['tasks'] as List?;
+        print('ApiService.syncData: Tasks data: $tasksData');
+        print('ApiService.syncData: Processing ${tasksData?.length ?? 0} tasks...');
+        final tasks = (tasksData ?? []).map((t) {
+          print('ApiService.syncData: Processing task: $t');
+          try {
+            return Task.fromJson(t);
+          } catch (e) {
+            print('ApiService.syncData: Error processing task $t: $e');
+            rethrow;
+          }
+        }).toList();
+        
+        final newSyncToken = data['sync_token'];
+        print('ApiService.syncData: New sync token: $newSyncToken');
+
+        _logger.info(
+          'Received ${projects.length} projects and ${tasks.length} tasks.',
+        );
+
+        print('ApiService.syncData: Upserting ${projects.length} projects...');
+        for (var project in projects) {
+          print('ApiService.syncData: Upserting project: $project');
+          await _db.upsertProject(project);
+        }
+        
+        print('ApiService.syncData: Upserting ${tasks.length} tasks...');
+        for (var task in tasks) {
+          print('ApiService.syncData: Upserting task: $task');
+          await _db.upsertTask(task);
+        }
+
+        print('ApiService.syncData: Saving sync token: $newSyncToken');
+        await prefs.setString('sync_token', newSyncToken);
+        _logger.info('Sync completed. New sync token saved.');
       } else {
-        _logger.warning('Failed to load tasks: ${response.statusCode}');
-        throw Exception('Failed to load tasks');
+        _logger.severe('Failed to sync data: ${response.statusCode}');
+        throw Exception('Failed to sync data');
       }
     } catch (e) {
-      _logger.severe('Error fetching tasks: $e');
+      _logger.severe('Error during sync: $e');
       rethrow;
     }
   }
@@ -90,31 +145,6 @@ class ApiService {
       _logger.info('Task $id deleted successfully.');
     } catch (e) {
       _logger.severe('Error deleting task $id: $e');
-      rethrow;
-    }
-  }
-
-  static Future<List<Project>> getProjects() async {
-    _logger.info('Fetching projects...');
-    final cachedProjects = await _db.allProjects;
-    if (cachedProjects.isNotEmpty) {
-      _logger.info('Projects loaded from cache.');
-      return cachedProjects;
-    }
-    try {
-      final response = await http.get(Uri.parse('$baseUrl/projects'));
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
-        _logger.info('Projects fetched successfully. data: $data');
-        final projects = data.map((json) => Project.fromJson(json)).toList();
-        await _db.setProjects(projects);
-        return projects;
-      } else {
-        _logger.warning('Failed to load projects: ${response.statusCode}');
-        throw Exception('Failed to load projects');
-      }
-    } catch (e) {
-      _logger.severe('Error fetching projects: $e');
       rethrow;
     }
   }
@@ -207,7 +237,8 @@ class ApiService {
       );
       if (response.statusCode != 200) {
         _logger.warning(
-            'Failed to reorder tasks for project $projectId: ${response.statusCode}');
+          'Failed to reorder tasks for project $projectId: ${response.statusCode}',
+        );
         throw Exception('Failed to reorder tasks');
       }
       _logger.info('Tasks for project $projectId reordered successfully.');
@@ -228,7 +259,9 @@ class ApiService {
         _logger.info('Task $id completed successfully.');
         final task = await _db.getTaskById(id);
         if (task == null) throw Exception('Task not found');
-        final updatedTask = task.copyWith(completedAt: ValueWrapper(DateTime.now()));
+        final updatedTask = task.copyWith(
+          completedAt: ValueWrapper(DateTime.now()),
+        );
         await _db.updateTask(updatedTask);
       } else {
         _logger.warning('Failed to complete task $id: ${response.statusCode}');

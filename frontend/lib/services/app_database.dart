@@ -36,8 +36,16 @@ class ListOfStringConverter extends TypeConverter<List<String>?, String?> {
   const ListOfStringConverter();
   @override
   List<String>? fromSql(String? fromDb) {
+    print('ListOfStringConverter.fromSql: fromDb = $fromDb');
     if (fromDb == null) return null;
-    return fromDb.split(',');
+    try {
+      final result = fromDb.split(',');
+      print('ListOfStringConverter.fromSql: result = $result');
+      return result;
+    } catch (e) {
+      print('ListOfStringConverter.fromSql: error = $e');
+      return null;
+    }
   }
 
   @override
@@ -97,12 +105,20 @@ class ListOfDateTimeConverter extends TypeConverter<List<DateTime>?, String?> {
   
   @override
   List<DateTime>? fromSql(String? fromDb) {
+    print('ListOfDateTimeConverter.fromSql: fromDb = $fromDb');
     if (fromDb == null || fromDb.trim().isEmpty) return null;
-    return fromDb.split(',')
-        .map((e) => _parseDate(e.trim()))
-        .where((d) => d != null)
-        .cast<DateTime>()
-        .toList();
+    try {
+      final result = fromDb.split(',')
+          .map((e) => _parseDate(e.trim()))
+          .where((d) => d != null)
+          .cast<DateTime>()
+          .toList();
+      print('ListOfDateTimeConverter.fromSql: result = $result');
+      return result;
+    } catch (e) {
+      print('ListOfDateTimeConverter.fromSql: error = $e');
+      return null;
+    }
   }
 
   @override
@@ -127,7 +143,17 @@ class AppDatabase extends _$AppDatabase {
   int get schemaVersion => 1;
 
   // Project methods
-  Future<List<project_model.Project>> get allProjects => (select(projects)..orderBy([(p) => OrderingTerm(expression: p.order)])).get();
+  Future<List<project_model.Project>> get allProjects async {
+    print('AppDatabase.allProjects: Loading all projects...');
+    try {
+      final result = await (select(projects)..orderBy([(p) => OrderingTerm(expression: p.order)])).get();
+      print('AppDatabase.allProjects: Loaded ${result.length} projects');
+      return result;
+    } catch (e) {
+      print('AppDatabase.allProjects: Error loading projects: $e');
+      rethrow;
+    }
+  }
 
   Future<void> insertProject(project_model.Project project) => into(projects).insert(
     ProjectsCompanion.insert(
@@ -149,27 +175,69 @@ class AppDatabase extends _$AppDatabase {
   );
 
   Future<void> deleteProject(int id) => (delete(projects)..where((p) => p.id.equals(id))).go();
-  
-  Future<void> setProjects(List<project_model.Project> projectList) async {
-    for (var project in projectList) {
-      await insertProject(project);
+
+  Future<void> upsertProject(project_model.Project project) async {
+    print('AppDatabase.upsertProject: Upserting project: $project');
+    try {
+      await into(projects).insertOnConflictUpdate(
+        ProjectsCompanion.insert(
+          id: project.id != null ? Value(project.id!) : const Value.absent(),
+          name: project.name,
+          order: project.order,
+          isInbox: Value(project.isInbox),
+          color: Value(project.color),
+        ),
+      );
+    } catch (e) {
+      print('AppDatabase.upsertProject: Error upserting project: $e');
+      rethrow;
     }
   }
-
-  // Task methods
-  Future<List<task_model.Task>> get allTasks => (select(tasks)..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
   
-  Future<List<task_model.Task>> getTasksByProject(int projectId) =>
-    (select(tasks)..where((t) => t.projectId.equals(projectId))..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+  Future<void> setProjects(List<project_model.Project> projects) async {
+    await batch((batch) {
+      batch.insertAll(this.projects, projects.map((p) => p as Insertable<project_model.Project>).toList(),
+          mode: InsertMode.insertOrReplace);
+    });
+  }
+
+  Future<void> clearDatabase() async {
+    await transaction(() async {
+      await customStatement('PRAGMA foreign_keys = OFF');
+      await delete(tasks).go();
+      await delete(projects).go();
+      await customStatement('PRAGMA foreign_keys = ON');
+    });
+  }
+  
+  Future<List<task_model.Task>> getTasksByProject(int projectId) async {
+    print('AppDatabase.getTasksByProject: Loading tasks for project $projectId...');
+    try {
+      final result = await (select(tasks)..where((t) => t.projectId.equals(projectId))..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+      print('AppDatabase.getTasksByProject: Loaded ${result.length} tasks for project $projectId');
+      return result;
+    } catch (e) {
+      print('AppDatabase.getTasksByProject: Error loading tasks for project $projectId: $e');
+      rethrow;
+    }
+  }
   
   Future<List<task_model.Task>> getTodayTasks() async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final todayEnd = today.add(const Duration(days: 1));
-    
-    return (select(tasks)
-      ..where((t) => t.completedAt.isNull() & t.dueDate.isNotNull() & t.dueDate.isBetweenValues(DateTime(1900), todayEnd))
-      ..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+    print('AppDatabase.getTodayTasks: Loading today\'s tasks...');
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final todayEnd = today.add(const Duration(days: 1));
+      
+      final result = await (select(tasks)
+        ..where((t) => t.completedAt.isNull() & t.dueDate.isNotNull() & t.dueDate.isBetweenValues(DateTime(1900), todayEnd))
+        ..orderBy([(t) => OrderingTerm(expression: t.order)])).get();
+      print('AppDatabase.getTodayTasks: Loaded ${result.length} today\'s tasks');
+      return result;
+    } catch (e) {
+      print('AppDatabase.getTodayTasks: Error loading today\'s tasks: $e');
+      rethrow;
+    }
   }
   
   Future<List<task_model.Task>> getUpcomingTasks() async {
@@ -240,6 +308,29 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteTask(int id) => (delete(tasks)..where((t) => t.id.equals(id))).go();
   
+  Future<void> upsertTask(task_model.Task task) async {
+    print('AppDatabase.upsertTask: Upserting task: $task');
+    try {
+      await into(tasks).insertOnConflictUpdate(
+        TasksCompanion.insert(
+          id: task.id != null ? Value(task.id!) : const Value.absent(),
+          description: task.description,
+          projectId: task.projectId,
+          dueDate: Value(task.dueDate),
+          dueDatetime: Value(task.dueDatetime),
+          labels: Value(task.labels),
+          order: task.order,
+          completedAt: Value(task.completedAt),
+          reminders: Value(task.reminders),
+          recurrence: Value(task.recurrence),
+        ),
+      );
+    } catch (e) {
+      print('AppDatabase.upsertTask: Error upserting task: $e');
+      rethrow;
+    }
+  }
+
   Future<void> setTasks(List<task_model.Task> taskList) async {
     for (var task in taskList) {
       await insertTask(task);
@@ -251,10 +342,6 @@ LazyDatabase _openConnection() {
   return LazyDatabase(() async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final file = File(p.join(dbFolder.path, 'db.sqlite'));
-    // Also delete the database file on start to recreate it every time.
-    if (await file.exists()) {
-      await file.delete();
-    }
     return NativeDatabase(file);
   });
 }

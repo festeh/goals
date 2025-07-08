@@ -15,7 +15,7 @@ class TaskScreen extends StatefulWidget {
   final CustomView? customView;
 
   const TaskScreen({super.key, this.project, this.customView})
-      : assert(project != null || customView != null);
+    : assert(project != null || customView != null);
 
   @override
   TaskScreenState createState() => TaskScreenState();
@@ -45,7 +45,7 @@ class TaskScreenState extends State<TaskScreen> {
 
   Future<void> _sync() async {
     try {
-      await ApiService.getTasks();
+      await ApiService.syncData();
       setState(() {});
     } catch (e) {
       _showErrorDialog('Error syncing tasks: $e');
@@ -55,10 +55,7 @@ class TaskScreenState extends State<TaskScreen> {
   void _showErrorDialog(String error) {
     showDialog(
       context: context,
-      builder: (context) => ErrorDialog(
-        error: error,
-        onSync: _sync,
-      ),
+      builder: (context) => ErrorDialog(error: error, onSync: _sync),
     );
   }
 
@@ -183,22 +180,22 @@ class TaskScreenState extends State<TaskScreen> {
             ),
           );
         }
-        
+
         if (snapshot.hasError) {
           return Scaffold(
-            body: Center(
-              child: Text('Error: ${snapshot.error}'),
-            ),
+            body: Center(child: Text('Error: ${snapshot.error}')),
           );
         }
-        
+
         final tasks = snapshot.data ?? [];
-        final nonCompletedTasks = tasks.where((task) => task.completedAt == null).toList();
-        final completedTasks = widget.customView?.name == 'Today' 
+        final nonCompletedTasks = tasks
+            .where((task) => task.completedAt == null)
+            .toList();
+        final completedTasks = widget.customView?.name == 'Today'
             ? <Task>[]
             : tasks.where((task) => task.completedAt != null).toList();
         completedTasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
-        
+
         return Scaffold(
           appBar: AppBar(
             title: Text(
@@ -233,8 +230,11 @@ class TaskScreenState extends State<TaskScreen> {
               : ReorderableListView.builder(
                   buildDefaultDragHandles: false,
                   padding: const EdgeInsets.all(8.0),
-                  itemCount: nonCompletedTasks.length +
-                      (completedTasks.isNotEmpty ? completedTasks.length + 1 : 0),
+                  itemCount:
+                      nonCompletedTasks.length +
+                      (completedTasks.isNotEmpty
+                          ? completedTasks.length + 1
+                          : 0),
                   itemBuilder: (context, index) {
                     if (index < nonCompletedTasks.length) {
                       final task = nonCompletedTasks[index];
@@ -299,9 +299,13 @@ class TaskScreenState extends State<TaskScreen> {
                     }
 
                     try {
-                      final allProjectTaskIds = await _db.getTaskIdsByProject(widget.project!.id!);
+                      final allProjectTaskIds = await _db.getTaskIdsByProject(
+                        widget.project!.id!,
+                      );
                       await ApiService.reorderTasks(
-                          widget.project!.id!, allProjectTaskIds);
+                        widget.project!.id!,
+                        allProjectTaskIds,
+                      );
                     } catch (e) {
                       _showErrorDialog('Error reordering tasks: $e');
                     }
@@ -318,4 +322,3 @@ class TaskScreenState extends State<TaskScreen> {
     );
   }
 }
-

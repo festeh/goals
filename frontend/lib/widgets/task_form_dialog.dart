@@ -52,33 +52,36 @@ class TaskFormDialogState extends State<TaskFormDialog> {
   @override
   void initState() {
     super.initState();
+    final task = widget.task;
     _descriptionController = TextEditingController(
-      text: widget.task?.description ?? '',
+      text: task?.description ?? '',
     );
     _labelsController = TextEditingController(
-      text: widget.task?.labels?.join(', ') ?? '',
+      text: task?.labels?.join(', ') ?? '',
     );
     _recurrenceController = TextEditingController(
-      text: widget.task?.recurrence ?? '',
+      text: task?.recurrence ?? '',
     );
-    _selectedProjectId = widget.task?.projectId ?? widget.selectedProject?.id;
-    if (widget.task?.dueDate != null) {
-      _selectedDate = widget.task!.dueDate;
-    } else if (widget.task?.dueDatetime != null) {
-      _selectedDate = widget.task!.dueDatetime;
-      _selectedTime = TimeOfDay.fromDateTime(widget.task!.dueDatetime!);
+    _selectedProjectId = task?.projectId ?? widget.selectedProject?.id;
+    if (task != null) {
+      if (task.dueDatetime != null) {
+        _selectedDate = task.dueDatetime;
+        _selectedTime = TimeOfDay.fromDateTime(task.dueDatetime!);
+      } else if (task.dueDate != null) {
+        _selectedDate = task.dueDate;
+      }
+      if (task.reminders != null) {
+        _selectedReminders = task.reminders!
+            .map(
+              (e) => _reminderStringFromDateTime(
+                e,
+                task.dueDatetime ?? task.dueDate!,
+              ),
+            )
+            .toList();
+      }
     } else if (widget.defaultDueDate != null) {
       _selectedDate = widget.defaultDueDate;
-    }
-    if (widget.task != null) {
-      _selectedReminders = widget.task!.reminders
-          ?.map(
-            (e) => _reminderStringFromDateTime(
-              e,
-              widget.task!.dueDatetime ?? widget.task!.dueDate!,
-            ),
-          )
-          .toList() ?? [];
     }
   }
 
@@ -353,7 +356,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                     error: 'Error saving task: $e',
                     onSync: () async {
                       try {
-                        await ApiService.getTasks();
+                        await ApiService.syncData();
                       } catch (e) {
                         // ignore
                       }

@@ -79,7 +79,19 @@ class Task {
   }
 
   factory Task.fromJson(Map<String, dynamic> json) {
+    print('Task.fromJson: Processing task JSON: $json');
     try {
+      print('Task.fromJson: id = ${json['id']}');
+      print('Task.fromJson: description = ${json['description']}');
+      print('Task.fromJson: project_id = ${json['project_id']}');
+      print('Task.fromJson: due_date = ${json['due_date']}');
+      print('Task.fromJson: due_datetime = ${json['due_datetime']}');
+      print('Task.fromJson: labels = ${json['labels']}');
+      print('Task.fromJson: order = ${json['order']}');
+      print('Task.fromJson: completed_at = ${json['completed_at']}');
+      print('Task.fromJson: reminders = ${json['reminders']}');
+      print('Task.fromJson: recurrence = ${json['recurrence']}');
+      
       return Task(
         id: json['id'],
         description: json['description'],
@@ -99,6 +111,7 @@ class Task {
         recurrence: json['recurrence'],
       );
     } catch (e) {
+      print('Task.fromJson: Error processing task JSON: $e');
       rethrow;
     }
   }

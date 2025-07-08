@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'dart:io' show Platform;
 import 'widgets/add_project_dialog.dart';
@@ -105,19 +106,28 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _loadInitialData() async {
+    print('_loadInitialData: Starting initial data load...');
     try {
+      print('_loadInitialData: Getting shared preferences...');
+      final prefs = await SharedPreferences.getInstance();
+      print('_loadInitialData: Loading projects from database...');
       final projects = await _db.allProjects;
-      final hasAnyTasks = await _db.hasAnyTasks();
-      if (projects.isEmpty) {
-        await ApiService.getProjects();
+      print('_loadInitialData: Loaded ${projects.length} projects from database');
+      
+      if (!prefs.containsKey('sync_token') || projects.isEmpty) {
+        print('_loadInitialData: No sync token or empty projects, clearing database...');
+        await _db.clearDatabase();
       }
-      if (!hasAnyTasks) {
-        await ApiService.getTasks();
-      }
+      
+      print('_loadInitialData: Syncing data with API...');
+      await ApiService.syncData();
+      print('_loadInitialData: Data sync completed successfully');
+      
       setState(() {
         _isLoading = false;
       });
     } catch (e) {
+      print('_loadInitialData: Error occurred: $e');
       setState(() {
         _isLoading = false;
       });
