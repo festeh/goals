@@ -139,15 +139,7 @@ class AppDatabase extends _$AppDatabase {
     }
   }
 
-  Future<void> insertProject(project_model.Project project) => into(projects).insert(
-    ProjectsCompanion.insert(
-      id: project.id != null ? Value(project.id!) : const Value.absent(),
-      name: project.name,
-      order: project.order,
-      isInbox: Value(project.isInbox),
-      color: Value(project.color),
-    )
-  );
+  Future<void> insertProject(project_model.Project project) => into(projects).insert(_projectToCompanion(project));
 
   Future<void> updateProject(project_model.Project project) => (update(projects)..where((p) => p.id.equals(project.id!))).write(
     ProjectsCompanion(
@@ -160,22 +152,18 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteProject(int id) => (delete(projects)..where((p) => p.id.equals(id))).go();
 
+  ProjectsCompanion _projectToCompanion(project_model.Project project) {
+    return ProjectsCompanion.insert(
+      id: project.id != null ? Value(project.id!) : const Value.absent(),
+      name: project.name,
+      order: project.order,
+      isInbox: Value(project.isInbox),
+      color: Value(project.color),
+    );
+  }
+
   Future<void> upsertProject(project_model.Project project) async {
-    print('AppDatabase.upsertProject: Upserting project: $project');
-    try {
-      await into(projects).insertOnConflictUpdate(
-        ProjectsCompanion.insert(
-          id: project.id != null ? Value(project.id!) : const Value.absent(),
-          name: project.name,
-          order: project.order,
-          isInbox: Value(project.isInbox),
-          color: Value(project.color),
-        ),
-      );
-    } catch (e) {
-      print('AppDatabase.upsertProject: Error upserting project: $e');
-      rethrow;
-    }
+    await into(projects).insertOnConflictUpdate(_projectToCompanion(project));
   }
   
   Future<void> setProjects(List<project_model.Project> projects) async {
@@ -261,20 +249,7 @@ class AppDatabase extends _$AppDatabase {
     return count.read(tasks.id.count())! > 0;
   }
 
-  Future<void> insertTask(task_model.Task task) => into(tasks).insert(
-    TasksCompanion.insert(
-      id: task.id != null ? Value(task.id!) : const Value.absent(),
-      description: task.description,
-      projectId: task.projectId,
-      dueDate: Value(task.dueDate),
-      dueDatetime: Value(task.dueDatetime),
-      labels: Value(task.labels),
-      order: task.order,
-      completedAt: Value(task.completedAt),
-      reminders: Value(task.reminders),
-      recurrence: Value(task.recurrence),
-    )
-  );
+  Future<void> insertTask(task_model.Task task) => into(tasks).insert(_taskToCompanion(task));
 
   Future<void> updateTask(task_model.Task task) => (update(tasks)..where((t) => t.id.equals(task.id!))).write(
     TasksCompanion(
@@ -292,27 +267,23 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> deleteTask(int id) => (delete(tasks)..where((t) => t.id.equals(id))).go();
   
+  TasksCompanion _taskToCompanion(task_model.Task task) {
+    return TasksCompanion.insert(
+      id: task.id != null ? Value(task.id!) : const Value.absent(),
+      description: task.description,
+      projectId: task.projectId,
+      dueDate: Value(task.dueDate),
+      dueDatetime: Value(task.dueDatetime),
+      labels: Value(task.labels),
+      order: task.order,
+      completedAt: Value(task.completedAt),
+      reminders: Value(task.reminders),
+      recurrence: Value(task.recurrence),
+    );
+  }
+
   Future<void> upsertTask(task_model.Task task) async {
-    print('AppDatabase.upsertTask: Upserting task: $task');
-    try {
-      await into(tasks).insertOnConflictUpdate(
-        TasksCompanion.insert(
-          id: task.id != null ? Value(task.id!) : const Value.absent(),
-          description: task.description,
-          projectId: task.projectId,
-          dueDate: Value(task.dueDate),
-          dueDatetime: Value(task.dueDatetime),
-          labels: Value(task.labels),
-          order: task.order,
-          completedAt: Value(task.completedAt),
-          reminders: Value(task.reminders),
-          recurrence: Value(task.recurrence),
-        ),
-      );
-    } catch (e) {
-      print('AppDatabase.upsertTask: Error upserting task: $e');
-      rethrow;
-    }
+    await into(tasks).insertOnConflictUpdate(_taskToCompanion(task));
   }
 
   Future<void> setTasks(List<task_model.Task> taskList) async {
