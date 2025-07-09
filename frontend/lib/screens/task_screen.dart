@@ -23,36 +23,65 @@ class TaskScreen extends StatefulWidget {
 
 class TaskScreenState extends State<TaskScreen> {
   final AppDatabase _db = AppDatabase();
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
+
+  Future<void> _loadTasks() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      List<Task> tasks;
+      if (widget.project != null && widget.project!.id != null) {
+        tasks = await _db.getTasksByProject(widget.project!.id!);
+      } else if (widget.customView?.name == 'Today') {
+        tasks = await _db.getTodayTasks();
+      } else if (widget.customView?.name == 'Upcoming') {
+        tasks = await _db.getUpcomingTasks();
+      } else if (widget.customView?.name == 'Next') {
+        tasks = await _db.getTasksByLabel('next');
+      } else {
+        tasks = [];
+      }
+      if (mounted) {
+        setState(() {
+          _tasks = tasks;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorDialog('Error loading tasks: $e');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   void showAddTaskDialog() {
     _showAddTaskDialog();
   }
 
-  Future<List<Task>> get _tasks async {
-    if (widget.project != null && widget.project!.id != null) {
-      return await _db.getTasksByProject(widget.project!.id!);
-    } else if (widget.customView?.name == 'Today') {
-      return await _db.getTodayTasks();
-    } else if (widget.customView?.name == 'Upcoming') {
-      return await _db.getUpcomingTasks();
-    } else if (widget.customView?.name == 'Next') {
-      return await _db.getTasksByLabel('next');
-    }
-    return [];
-  }
-
-  // These getters are now handled directly in the FutureBuilder
-
   Future<void> _sync() async {
     try {
       await ApiService.syncData();
-      setState(() {});
+      await _loadTasks();
     } catch (e) {
       _showErrorDialog('Error syncing tasks: $e');
     }
   }
 
   void _showErrorDialog(String error) {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => ErrorDialog(error: error, onSync: _sync),
@@ -62,7 +91,7 @@ class TaskScreenState extends State<TaskScreen> {
   Future<void> _deleteTask(int id) async {
     try {
       await ApiService.deleteTask(id);
-      setState(() {});
+      await _loadTasks();
     } catch (e) {
       _showErrorDialog('Error deleting task: $e');
     }
@@ -81,7 +110,7 @@ class TaskScreenState extends State<TaskScreen> {
     } catch (e) {
       _showErrorDialog('Error toggling task completion: $e');
     } finally {
-      setState(() {});
+      await _loadTasks();
     }
   }
 
@@ -99,6 +128,7 @@ class TaskScreenState extends State<TaskScreen> {
       defaultDueDate = DateTime.now();
     }
 
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => FutureBuilder<List<Project>>(
@@ -113,7 +143,7 @@ class TaskScreenState extends State<TaskScreen> {
             defaultDueDate: defaultDueDate,
             onSave: (task) async {
               await ApiService.createTask(task);
-              setState(() {});
+              await _loadTasks();
             },
             title: 'Add New Task',
             submitButtonText: 'Add',
@@ -137,7 +167,7 @@ class TaskScreenState extends State<TaskScreen> {
             projects: snapshot.data ?? [],
             onSave: (updatedTask) async {
               await ApiService.updateTask(task.id!, updatedTask);
-              setState(() {});
+              await _loadTasks();
             },
             title: 'Edit Task',
             submitButtonText: 'Save',
@@ -159,166 +189,135 @@ class TaskScreenState extends State<TaskScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Task>>(
-      future: _tasks,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            appBar: AppBar(
-              title: Text(
-                _title,
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-            ),
-            body: const SizedBox.shrink(),
-            floatingActionButton: FloatingActionButton(
-              onPressed: _showAddTaskDialog,
-              tooltip: 'Add Task',
-              child: const Icon(Icons.add),
-            ),
-          );
-        }
+    final nonCompletedTasks = _tasks
+        .where((task) => task.completedAt == null)
+        .toList();
+    final completedTasks = widget.customView?.name == 'Today'
+        ? <Task>[]
+        : _tasks.where((task) => task.completedAt != null).toList();
+    completedTasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
 
-        if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(child: Text('Error: ${snapshot.error}')),
-          );
-        }
-
-        final tasks = snapshot.data ?? [];
-        final nonCompletedTasks = tasks
-            .where((task) => task.completedAt == null)
-            .toList();
-        final completedTasks = widget.customView?.name == 'Today'
-            ? <Task>[]
-            : tasks.where((task) => task.completedAt != null).toList();
-        completedTasks.sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(
-              _title,
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-          ),
-          body: tasks.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.check_circle_outline, size: 64),
-                      const SizedBox(height: 16),
-                      Text(
-                        widget.customView?.name == 'Today'
-                            ? 'No tasks for today'
-                            : 'No tasks yet!',
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      if (widget.customView?.name != 'Today')
-                        Text(
-                          'Click the "+" button to add your first task.',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                    ],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_title, style: Theme.of(context).textTheme.headlineSmall),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: _isLoading
+          ? const Center(child: SizedBox.shrink())
+          : _tasks.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle_outline, size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    widget.customView?.name == 'Today'
+                        ? 'No tasks for today'
+                        : 'No tasks yet!',
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
-                )
-              : ReorderableListView.builder(
-                  buildDefaultDragHandles: false,
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount:
-                      nonCompletedTasks.length +
-                      (completedTasks.isNotEmpty
-                          ? completedTasks.length + 1
-                          : 0),
-                  itemBuilder: (context, index) {
-                    if (index < nonCompletedTasks.length) {
-                      final task = nonCompletedTasks[index];
-                      return ReorderableDragStartListener(
-                        key: Key(task.id.toString()),
-                        index: index,
-                        child: TaskWidget(
-                          task: task,
-                          onToggleComplete: _toggleComplete,
-                          onDelete: _deleteTask,
-                          onEdit: _showEditTaskDialog,
-                        ),
-                      );
-                    } else if (index == nonCompletedTasks.length &&
-                        completedTasks.isNotEmpty) {
-                      return Column(
-                        key: const Key('completed_tasks_header'),
-                        children: const [
-                          Divider(
-                            height: 32,
-                            thickness: 2,
-                            indent: 16,
-                            endIndent: 16,
-                          ),
-                          Text('Completed tasks'),
-                        ],
-                      );
-                    } else {
-                      final task =
-                          completedTasks[index - nonCompletedTasks.length - 1];
-                      return CompletedTaskWidget(
-                        key: Key(task.id.toString()),
-                        task: task,
-                        onToggleComplete: _toggleComplete,
-                        onDelete: _deleteTask,
-                        onEdit: _showEditTaskDialog,
-                      );
-                    }
-                  },
-                  onReorder: (oldIndex, newIndex) async {
-                    if (widget.project == null) return;
-                    if (oldIndex >= nonCompletedTasks.length ||
-                        newIndex > nonCompletedTasks.length) {
-                      return;
-                    }
+                  const SizedBox(height: 8),
+                  if (widget.customView?.name != 'Today')
+                    Text(
+                      'Click the "+" button to add your first task.',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                ],
+              ),
+            )
+          : ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              padding: const EdgeInsets.all(8.0),
+              itemCount:
+                  nonCompletedTasks.length +
+                  (completedTasks.isNotEmpty ? completedTasks.length + 1 : 0),
+              itemBuilder: (context, index) {
+                if (index < nonCompletedTasks.length) {
+                  final task = nonCompletedTasks[index];
+                  return ReorderableDragStartListener(
+                    key: Key(task.id.toString()),
+                    index: index,
+                    child: TaskWidget(
+                      task: task,
+                      onToggleComplete: _toggleComplete,
+                      onDelete: _deleteTask,
+                      onEdit: _showEditTaskDialog,
+                    ),
+                  );
+                } else if (index == nonCompletedTasks.length &&
+                    completedTasks.isNotEmpty) {
+                  return Column(
+                    key: const Key('completed_tasks_header'),
+                    children: const [
+                      Divider(
+                        height: 32,
+                        thickness: 2,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
+                      Text('Completed tasks'),
+                    ],
+                  );
+                } else {
+                  final task =
+                      completedTasks[index - nonCompletedTasks.length - 1];
+                  return CompletedTaskWidget(
+                    key: Key(task.id.toString()),
+                    task: task,
+                    onToggleComplete: _toggleComplete,
+                    onDelete: _deleteTask,
+                    onEdit: _showEditTaskDialog,
+                  );
+                }
+              },
+              onReorder: (oldIndex, newIndex) async {
+                if (widget.project == null) return;
+                if (oldIndex >= nonCompletedTasks.length ||
+                    newIndex > nonCompletedTasks.length) {
+                  return;
+                }
 
-                    if (newIndex > oldIndex) {
-                      newIndex -= 1;
-                    }
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
 
-                    final reorderableTasks = List<Task>.from(nonCompletedTasks);
-                    final task = reorderableTasks.removeAt(oldIndex);
-                    reorderableTasks.insert(newIndex, task);
+                setState(() {
+                  final task = nonCompletedTasks.removeAt(oldIndex);
+                  nonCompletedTasks.insert(newIndex, task);
+                  _tasks = [...nonCompletedTasks, ...completedTasks];
+                });
 
-                    final newlyOrderedTasks = reorderableTasks + completedTasks;
+                final newlyOrderedTasks = nonCompletedTasks;
 
-                    for (int i = 0; i < newlyOrderedTasks.length; i++) {
-                      final taskToUpdate = newlyOrderedTasks[i];
-                      if (taskToUpdate.order != i) {
-                        await _db.updateTask(taskToUpdate.copyWith(order: i));
-                      }
-                    }
+                for (int i = 0; i < newlyOrderedTasks.length; i++) {
+                  final taskToUpdate = newlyOrderedTasks[i];
+                  if (taskToUpdate.order != i) {
+                    await _db.updateTask(taskToUpdate.copyWith(order: i));
+                  }
+                }
 
-                    try {
-                      final allProjectTaskIds = await _db.getTaskIdsByProject(
-                        widget.project!.id!,
-                      );
-                      await ApiService.reorderTasks(
-                        widget.project!.id!,
-                        allProjectTaskIds,
-                      );
-                    } catch (e) {
-                      _showErrorDialog('Error reordering tasks: $e');
-                    }
-                    setState(() {});
-                  },
-                ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: _showAddTaskDialog,
-            tooltip: 'Add Task',
-            child: const Icon(Icons.add),
-          ),
-        );
-      },
+                try {
+                  final allProjectTaskIds = newlyOrderedTasks
+                      .map((t) => t.id!)
+                      .toList();
+                  await ApiService.reorderTasks(
+                    widget.project!.id!,
+                    allProjectTaskIds,
+                  );
+                } catch (e) {
+                  _showErrorDialog('Error reordering tasks: $e');
+                  // If reorder fails, reload from the source of truth
+                  await _loadTasks();
+                }
+              },
+            ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTaskDialog,
+        tooltip: 'Add Task',
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
