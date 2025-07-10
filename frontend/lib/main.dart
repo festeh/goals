@@ -114,9 +114,9 @@ class _MainScreenState extends State<MainScreen> {
       final projects = await _db.allProjects;
       print('_loadInitialData: Loaded ${projects.length} projects from database');
       
-      if (!prefs.containsKey('sync_token') || projects.isEmpty) {
-        print('_loadInitialData: No sync token or empty projects, clearing database...');
-        await _db.clearDatabase();
+      if (projects.isEmpty) {
+        print('_loadInitialData: No projects found, performing initial sync...');
+        prefs.remove('sync_token');
       }
       
       print('_loadInitialData: Syncing data with API...');
