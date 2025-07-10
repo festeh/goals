@@ -67,11 +67,11 @@ class Task {
         }
       }
       
-      return DateTime.parse(processedDateStr);
+      return DateTime.parse(processedDateStr).toUtc();
     } catch (e) {
       // Fallback: try parsing as-is
       try {
-        return DateTime.parse(dateStr);
+        return DateTime.parse(dateStr).toUtc();
       } catch (e2) {
         return null;
       }
@@ -121,12 +121,12 @@ class Task {
       'id': id,
       'description': description,
       'project_id': projectId,
-      'due_date': dueDate?.toIso8601String(),
-      'due_datetime': dueDatetime?.toIso8601String(),
+      'due_date': dueDate?.toUtc().toIso8601String(),
+      'due_datetime': dueDatetime?.toUtc().toIso8601String(),
       'labels': labels,
       'order': order,
-      'completed_at': completedAt?.toIso8601String(),
-      'reminders': reminders.map((e) => e.toIso8601String()).toList(),
+      'completed_at': completedAt?.toUtc().toIso8601String(),
+      'reminders': reminders.map((e) => e.toUtc().toIso8601String()).toList(),
       'recurrence': recurrence,
     };
   }

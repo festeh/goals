@@ -292,7 +292,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 DateTime? dueDatetime;
                 if (_selectedDate != null) {
                   if (_selectedTime != null) {
-                    dueDatetime = DateTime.utc(
+                    dueDatetime = DateTime(
                       _selectedDate!.year,
                       _selectedDate!.month,
                       _selectedDate!.day,
@@ -300,7 +300,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                       _selectedTime!.minute,
                     );
                   } else {
-                    dueDate = DateTime.utc(
+                    dueDate = DateTime(
                       _selectedDate!.year,
                       _selectedDate!.month,
                       _selectedDate!.day,
