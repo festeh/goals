@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dimaist/widgets/custom_view_widget.dart';
 
-class LeftBar extends StatelessWidget {
+class LeftBar extends StatefulWidget {
   final String? selectedView;
   final Function(String) onCustomViewSelected;
   final VoidCallback onAddProject;
@@ -14,6 +14,25 @@ class LeftBar extends StatelessWidget {
     required this.onAddProject,
     required this.projectList,
   });
+
+  @override
+  State<LeftBar> createState() => _LeftBarState();
+}
+
+class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,17 +61,36 @@ class LeftBar extends StatelessWidget {
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
-                    onPressed: onAddProject,
+                    onPressed: widget.onAddProject,
                   ),
                 ],
               ),
             ),
-            CustomViewWidget(
-              selectedView: selectedView,
-              onSelected: onCustomViewSelected,
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Tasks'),
+                Tab(text: 'Notes'),
+              ],
             ),
-            const Divider(),
-            Expanded(child: projectList),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  Column(
+                    children: [
+                      CustomViewWidget(
+                        selectedView: widget.selectedView,
+                        onSelected: widget.onCustomViewSelected,
+                      ),
+                      const Divider(),
+                      Expanded(child: widget.projectList),
+                    ],
+                  ),
+                  Container(), // Empty container for Notes tab
+                ],
+              ),
+            ),
           ],
         ),
       ),
