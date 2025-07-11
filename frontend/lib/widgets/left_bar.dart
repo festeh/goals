@@ -51,27 +51,14 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Dimaist',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    onPressed: widget.onAddProject,
-                  ),
+              padding: const EdgeInsets.only(top: 8.0),
+              child: TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Tasks'),
+                  Tab(text: 'Notes'),
                 ],
               ),
-            ),
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Tasks'),
-                Tab(text: 'Notes'),
-              ],
             ),
             Expanded(
               child: TabBarView(
@@ -85,6 +72,18 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin {
                       ),
                       const Divider(),
                       Expanded(child: widget.projectList),
+                      const Divider(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: IconButton(
+                            icon: const Icon(Icons.add_circle_outline),
+                            onPressed: widget.onAddProject,
+                            tooltip: 'Add Project',
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   Container(), // Empty container for Notes tab
