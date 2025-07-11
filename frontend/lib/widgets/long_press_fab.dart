@@ -1,3 +1,4 @@
+import 'package:dimaist/widgets/recording_dialog.dart';
 import 'package:flutter/material.dart';
 
 class LongPressFab extends StatefulWidget {
@@ -98,6 +99,13 @@ class _LongPressFabState extends State<LongPressFab>
     _overlayEntry = null;
   }
 
+  void _showRecordingDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const RecordingDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -109,7 +117,11 @@ class _LongPressFabState extends State<LongPressFab>
       },
       onLongPressEnd: (_) {
         if (_selectedValue != null) {
-          widget.onMenuItemSelected(_selectedValue!);
+          if (_selectedValue == 'Voice AI') {
+            _showRecordingDialog();
+          } else {
+            widget.onMenuItemSelected(_selectedValue!);
+          }
         }
         _hideMenu();
         setState(() {
@@ -196,7 +208,7 @@ class _MenuOverlay extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.8),
+                color: Colors.black.withAlpha(25),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),

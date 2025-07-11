@@ -272,4 +272,31 @@ class ApiService {
       rethrow;
     }
   }
+
+  static Future<void> sendAudio(List<int> audioBytes) async {
+    _logger.info('Sending audio...');
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/ai/audio'),
+      );
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'audio',
+          audioBytes,
+          filename: 'audio.wav',
+        ),
+      );
+      final response = await request.send();
+      if (response.statusCode == 200) {
+        _logger.info('Audio sent successfully.');
+      } else {
+        _logger.warning('Failed to send audio: ${response.statusCode}');
+        throw Exception('Failed to send audio');
+      }
+    } catch (e) {
+      _logger.severe('Error sending audio: $e');
+      rethrow;
+    }
+  }
 }
