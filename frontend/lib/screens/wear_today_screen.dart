@@ -42,7 +42,7 @@ class _WearTodayScreenState extends State<WearTodayScreen> {
             itemBuilder: (context, index) {
               final task = tasks[index];
               return ListTile(
-                title: Text(task.content),
+                title: Text(task.description),
                 subtitle: task.dueDate != null
                     ? Text(
                         'Due: ${task.dueDate!.toLocal().toString().split(' ')[0]}')

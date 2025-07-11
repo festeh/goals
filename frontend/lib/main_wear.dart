@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:dimaist/screens/wear_today_screen.dart';
-import 'package:dimaist/services/app_database.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppDatabase().initDb();
+  
   runApp(const WearApp());
 }
 
