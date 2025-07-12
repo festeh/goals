@@ -4,31 +4,23 @@ import '../models/note.dart';
 class NoteWidget extends StatelessWidget {
   final Note note;
   final VoidCallback onDelete;
-  final VoidCallback onEdit;
+  final VoidCallback onTap;
 
   const NoteWidget({
     super.key,
     required this.note,
     required this.onDelete,
-    required this.onEdit,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      title: Text(note.title),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: onEdit,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: onDelete,
-          ),
-        ],
+      title: Text(note.title, overflow: TextOverflow.ellipsis),
+      onTap: onTap,
+      trailing: IconButton(
+        icon: const Icon(Icons.delete),
+        onPressed: onDelete,
       ),
     );
   }
