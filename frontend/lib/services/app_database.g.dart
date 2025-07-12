@@ -40,21 +40,6 @@ class $ProjectsTable extends Projects
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _isInboxMeta = const VerificationMeta(
-    'isInbox',
-  );
-  @override
-  late final GeneratedColumn<bool> isInbox = GeneratedColumn<bool>(
-    'is_inbox',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("is_inbox" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
-  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   @override
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
@@ -66,7 +51,7 @@ class $ProjectsTable extends Projects
     defaultValue: const Constant('grey'),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name, order, isInbox, color];
+  List<GeneratedColumn> get $columns => [id, name, order, color];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -98,12 +83,6 @@ class $ProjectsTable extends Projects
     } else if (isInserting) {
       context.missing(_orderMeta);
     }
-    if (data.containsKey('is_inbox')) {
-      context.handle(
-        _isInboxMeta,
-        isInbox.isAcceptableOrUnknown(data['is_inbox']!, _isInboxMeta),
-      );
-    }
     if (data.containsKey('color')) {
       context.handle(
         _colorMeta,
@@ -131,10 +110,6 @@ class $ProjectsTable extends Projects
         DriftSqlType.int,
         data['${effectivePrefix}order'],
       )!,
-      isInbox: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}is_inbox'],
-      )!,
       color: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}color'],
@@ -152,20 +127,17 @@ class ProjectsCompanion extends UpdateCompanion<project_model.Project> {
   final Value<int> id;
   final Value<String> name;
   final Value<int> order;
-  final Value<bool> isInbox;
   final Value<String> color;
   const ProjectsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
     this.order = const Value.absent(),
-    this.isInbox = const Value.absent(),
     this.color = const Value.absent(),
   });
   ProjectsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
     required int order,
-    this.isInbox = const Value.absent(),
     this.color = const Value.absent(),
   }) : name = Value(name),
        order = Value(order);
@@ -173,14 +145,12 @@ class ProjectsCompanion extends UpdateCompanion<project_model.Project> {
     Expression<int>? id,
     Expression<String>? name,
     Expression<int>? order,
-    Expression<bool>? isInbox,
     Expression<String>? color,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
       if (order != null) 'order': order,
-      if (isInbox != null) 'is_inbox': isInbox,
       if (color != null) 'color': color,
     });
   }
@@ -189,14 +159,12 @@ class ProjectsCompanion extends UpdateCompanion<project_model.Project> {
     Value<int>? id,
     Value<String>? name,
     Value<int>? order,
-    Value<bool>? isInbox,
     Value<String>? color,
   }) {
     return ProjectsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
       order: order ?? this.order,
-      isInbox: isInbox ?? this.isInbox,
       color: color ?? this.color,
     );
   }
@@ -213,9 +181,6 @@ class ProjectsCompanion extends UpdateCompanion<project_model.Project> {
     if (order.present) {
       map['order'] = Variable<int>(order.value);
     }
-    if (isInbox.present) {
-      map['is_inbox'] = Variable<bool>(isInbox.value);
-    }
     if (color.present) {
       map['color'] = Variable<String>(color.value);
     }
@@ -228,7 +193,6 @@ class ProjectsCompanion extends UpdateCompanion<project_model.Project> {
           ..write('id: $id, ')
           ..write('name: $name, ')
           ..write('order: $order, ')
-          ..write('isInbox: $isInbox, ')
           ..write('color: $color')
           ..write(')'))
         .toString();
@@ -645,16 +609,183 @@ class TasksCompanion extends UpdateCompanion<task_model.Task> {
   }
 }
 
+class $NotesTable extends Notes with TableInfo<$NotesTable, note_model.Note> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NotesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, title, content];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'notes';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<note_model.Note> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_contentMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  note_model.Note map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return note_model.Note(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      )!,
+    );
+  }
+
+  @override
+  $NotesTable createAlias(String alias) {
+    return $NotesTable(attachedDatabase, alias);
+  }
+}
+
+class NotesCompanion extends UpdateCompanion<note_model.Note> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String> content;
+  const NotesCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+  });
+  NotesCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required String content,
+  }) : title = Value(title),
+       content = Value(content);
+  static Insertable<note_model.Note> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? content,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+    });
+  }
+
+  NotesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<String>? content,
+  }) {
+    return NotesCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NotesCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('content: $content')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $ProjectsTable projects = $ProjectsTable(this);
   late final $TasksTable tasks = $TasksTable(this);
+  late final $NotesTable notes = $NotesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [projects, tasks];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [projects, tasks, notes];
 }
 
 typedef $$ProjectsTableCreateCompanionBuilder =
@@ -662,7 +793,6 @@ typedef $$ProjectsTableCreateCompanionBuilder =
       Value<int> id,
       required String name,
       required int order,
-      Value<bool> isInbox,
       Value<String> color,
     });
 typedef $$ProjectsTableUpdateCompanionBuilder =
@@ -670,7 +800,6 @@ typedef $$ProjectsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> name,
       Value<int> order,
-      Value<bool> isInbox,
       Value<String> color,
     });
 
@@ -695,11 +824,6 @@ class $$ProjectsTableFilterComposer
 
   ColumnFilters<int> get order => $composableBuilder(
     column: $table.order,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get isInbox => $composableBuilder(
-    column: $table.isInbox,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -733,11 +857,6 @@ class $$ProjectsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<bool> get isInbox => $composableBuilder(
-    column: $table.isInbox,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get color => $composableBuilder(
     column: $table.color,
     builder: (column) => ColumnOrderings(column),
@@ -761,9 +880,6 @@ class $$ProjectsTableAnnotationComposer
 
   GeneratedColumn<int> get order =>
       $composableBuilder(column: $table.order, builder: (column) => column);
-
-  GeneratedColumn<bool> get isInbox =>
-      $composableBuilder(column: $table.isInbox, builder: (column) => column);
 
   GeneratedColumn<String> get color =>
       $composableBuilder(column: $table.color, builder: (column) => column);
@@ -807,13 +923,11 @@ class $$ProjectsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<int> order = const Value.absent(),
-                Value<bool> isInbox = const Value.absent(),
                 Value<String> color = const Value.absent(),
               }) => ProjectsCompanion(
                 id: id,
                 name: name,
                 order: order,
-                isInbox: isInbox,
                 color: color,
               ),
           createCompanionCallback:
@@ -821,13 +935,11 @@ class $$ProjectsTableTableManager
                 Value<int> id = const Value.absent(),
                 required String name,
                 required int order,
-                Value<bool> isInbox = const Value.absent(),
                 Value<String> color = const Value.absent(),
               }) => ProjectsCompanion.insert(
                 id: id,
                 name: name,
                 order: order,
-                isInbox: isInbox,
                 color: color,
               ),
           withReferenceMapper: (p0) => p0
@@ -1153,6 +1265,154 @@ typedef $$TasksTableProcessedTableManager =
       task_model.Task,
       PrefetchHooks Function()
     >;
+typedef $$NotesTableCreateCompanionBuilder =
+    NotesCompanion Function({
+      Value<int> id,
+      required String title,
+      required String content,
+    });
+typedef $$NotesTableUpdateCompanionBuilder =
+    NotesCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<String> content,
+    });
+
+class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
+  $$NotesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NotesTableOrderingComposer
+    extends Composer<_$AppDatabase, $NotesTable> {
+  $$NotesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NotesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NotesTable> {
+  $$NotesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+}
+
+class $$NotesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NotesTable,
+          note_model.Note,
+          $$NotesTableFilterComposer,
+          $$NotesTableOrderingComposer,
+          $$NotesTableAnnotationComposer,
+          $$NotesTableCreateCompanionBuilder,
+          $$NotesTableUpdateCompanionBuilder,
+          (
+            note_model.Note,
+            BaseReferences<_$AppDatabase, $NotesTable, note_model.Note>,
+          ),
+          note_model.Note,
+          PrefetchHooks Function()
+        > {
+  $$NotesTableTableManager(_$AppDatabase db, $NotesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NotesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NotesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NotesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> content = const Value.absent(),
+              }) => NotesCompanion(id: id, title: title, content: content),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                required String content,
+              }) =>
+                  NotesCompanion.insert(id: id, title: title, content: content),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NotesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NotesTable,
+      note_model.Note,
+      $$NotesTableFilterComposer,
+      $$NotesTableOrderingComposer,
+      $$NotesTableAnnotationComposer,
+      $$NotesTableCreateCompanionBuilder,
+      $$NotesTableUpdateCompanionBuilder,
+      (
+        note_model.Note,
+        BaseReferences<_$AppDatabase, $NotesTable, note_model.Note>,
+      ),
+      note_model.Note,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1161,4 +1421,6 @@ class $AppDatabaseManager {
       $$ProjectsTableTableManager(_db, _db.projects);
   $$TasksTableTableManager get tasks =>
       $$TasksTableTableManager(_db, _db.tasks);
+  $$NotesTableTableManager get notes =>
+      $$NotesTableTableManager(_db, _db.notes);
 }

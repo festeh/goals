@@ -35,15 +35,15 @@ class Task {
 
   static DateTime? _parseDate(String? dateStr) {
     if (dateStr == null) return null;
-    
+
     try {
       String processedDateStr = dateStr;
-      
+
       // Handle invalid dates like "0001-01-01T00:53:28+00:53"
       if (dateStr.startsWith('0001-01-01')) {
         return null;
       }
-      
+
       // Fix malformed timezone formats
       if (dateStr.contains('+') && dateStr.length > 6) {
         // Handle +00:53 format (should be +00:53:00 or just skip)
@@ -52,11 +52,14 @@ class Task {
           final minutes = tzMatch.group(2)!;
           // If it's not a standard timezone offset, convert to UTC
           if (minutes != '00' && minutes != '30' && minutes != '45') {
-            processedDateStr = dateStr.replaceFirst(RegExp(r'\+\d{2}:\d{2}$'), 'Z');
+            processedDateStr = dateStr.replaceFirst(
+              RegExp(r'\+\d{2}:\d{2}$'),
+              'Z',
+            );
           }
         }
       }
-      
+
       // Handle RFC3339 format like "2025-07-08 23:59:00+000"
       // Convert to proper ISO 8601 format
       if (dateStr.contains('+') && !dateStr.contains('T')) {
@@ -66,7 +69,7 @@ class Task {
           processedDateStr = processedDateStr.replaceFirst('+000', '+00:00');
         }
       }
-      
+
       return DateTime.parse(processedDateStr).toUtc();
     } catch (e) {
       // Fallback: try parsing as-is
@@ -91,7 +94,7 @@ class Task {
       print('Task.fromJson: completed_at = ${json['completed_at']}');
       print('Task.fromJson: reminders = ${json['reminders']}');
       print('Task.fromJson: recurrence = ${json['recurrence']}');
-      
+
       return Task(
         id: json['id'],
         description: json['description'],
@@ -101,12 +104,12 @@ class Task {
         labels: json['labels'] != null ? List<String>.from(json['labels']) : [],
         order: json['order'],
         completedAt: _parseDate(json['completed_at']),
-        reminders: json['reminders'] != null 
+        reminders: json['reminders'] != null
             ? (json['reminders'] as List<dynamic>)
-                .map((e) => _parseDate(e as String?))
-                .where((d) => d != null)
-                .cast<DateTime>()
-                .toList()
+                  .map((e) => _parseDate(e as String?))
+                  .where((d) => d != null)
+                  .cast<DateTime>()
+                  .toList()
             : [],
         recurrence: json['recurrence'],
       );
