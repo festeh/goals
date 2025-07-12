@@ -68,9 +68,11 @@ class _NoteDetailViewState extends State<NoteDetailView> {
                 decoration: const InputDecoration(
                   labelText: 'Content',
                   border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
                 ),
                 maxLines: null,
                 expands: true,
+                textAlignVertical: TextAlignVertical.top,
               ),
             ),
             const SizedBox(height: 16),
