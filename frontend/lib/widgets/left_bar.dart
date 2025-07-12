@@ -1,3 +1,4 @@
+import 'package:dimaist/models/note.dart';
 import 'package:dimaist/widgets/notes_tab.dart';
 import 'package:dimaist/widgets/tasks_tab.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/material.dart';
 class LeftBar extends StatefulWidget {
   final String? selectedView;
   final Function(String) onCustomViewSelected;
+  final Function(Note) onNoteSelected;
   final VoidCallback onAddProject;
   final Widget projectList;
 
@@ -12,6 +14,7 @@ class LeftBar extends StatefulWidget {
     super.key,
     required this.selectedView,
     required this.onCustomViewSelected,
+    required this.onNoteSelected,
     required this.onAddProject,
     required this.projectList,
   });
@@ -38,7 +41,7 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 250,
+      width: 248,
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
@@ -71,7 +74,7 @@ class _LeftBarState extends State<LeftBar> with SingleTickerProviderStateMixin {
                     onAddProject: widget.onAddProject,
                     projectList: widget.projectList,
                   ),
-                  const NotesTab(),
+                  NotesTab(onNoteSelected: widget.onNoteSelected),
                 ],
               ),
             ),

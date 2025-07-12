@@ -1,4 +1,6 @@
+import 'package:dimaist/models/note.dart';
 import 'package:dimaist/widgets/left_bar.dart';
+import 'package:dimaist/widgets/note_detail_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -85,6 +87,7 @@ class _MainScreenState extends State<MainScreen> {
   GlobalKey<TaskScreenState>? _currentTaskScreenKey;
   String? _selectedCustomView = 'Today';
   int? _selectedProjectId;
+  Note? _selectedNote;
   bool _isLoading = true;
   List<Project> _projects = [];
 
@@ -182,6 +185,7 @@ class _MainScreenState extends State<MainScreen> {
         if (_selectedProjectId == id) {
           _selectedCustomView = 'Today';
           _selectedProjectId = null;
+          _selectedNote = null;
         }
       });
     } catch (e) {
@@ -193,7 +197,22 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedCustomView = viewName;
       _selectedProjectId = null;
+      _selectedNote = null;
     });
+  }
+
+  void _setSelectedNote(Note note) {
+    setState(() {
+      _selectedCustomView = null;
+      _selectedProjectId = null;
+      _selectedNote = note;
+    });
+  }
+
+  void _saveNote(Note note) async {
+    await ApiService.updateNote(note.id!, note);
+    await _db.updateNote(note);
+    // No need to call _loadNotes here as the note is updated in place
   }
 
   @override
@@ -242,6 +261,7 @@ class _MainScreenState extends State<MainScreen> {
             LeftBar(
               selectedView: _selectedCustomView,
               onCustomViewSelected: _setSelectedCustomView,
+              onNoteSelected: _setSelectedNote,
               onAddProject: _showAddProjectDialog,
               projectList: ProjectList(
                 projects: _projects,
@@ -250,6 +270,7 @@ class _MainScreenState extends State<MainScreen> {
                   setState(() {
                     _selectedCustomView = null;
                     _selectedProjectId = _projects[index].id;
+                    _selectedNote = null;
                   });
                 },
                 onReorder: (oldIndex, newIndex) async {
@@ -287,7 +308,7 @@ class _MainScreenState extends State<MainScreen> {
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
-                  : _buildTaskScreen(_projects),
+                  : _buildMainContent(_projects),
             ),
           ],
         ),
@@ -295,7 +316,11 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget _buildTaskScreen(List<Project> projects) {
+  Widget _buildMainContent(List<Project> projects) {
+    if (_selectedNote != null) {
+      return NoteDetailView(note: _selectedNote!, onSave: _saveNote);
+    }
+
     if (_selectedCustomView != null) {
       final view = CustomViewWidget.customViews
           .firstWhere((v) => v.name == _selectedCustomView);
