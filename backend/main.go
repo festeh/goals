@@ -73,6 +73,16 @@ func main() {
 	// Reordering routes (separate to avoid conflicts)
 	r.Put("/projects-reorder", reorderProjects)
 
+	// Notes routes
+	r.Route("/notes", func(r chi.Router) {
+		r.Get("/", listNotes)
+		r.Post("/", createNote)
+		r.Route("/{noteID}", func(r chi.Router) {
+			r.Put("/", updateNote)
+			r.Delete("/", deleteNote)
+		})
+	})
+
 	// Sync route
 	r.Get("/sync", syncData)
 
@@ -483,4 +493,87 @@ func syncData(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func listNotes(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Listing notes").Send()
+
+	var notes []database.Note
+	result := database.DB.Find(&notes)
+	if result.Error != nil {
+		logger.Error("Failed to retrieve notes").Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully retrieved notes").Int64("count", result.RowsAffected).Send()
+	json.NewEncoder(w).Encode(notes)
+}
+
+func createNote(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Creating new note").Send()
+
+	var n database.Note
+	err := json.NewDecoder(r.Body).Decode(&n)
+	if err != nil {
+		logger.Error("Failed to decode note request").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result := database.DB.Create(&n)
+	if result.Error != nil {
+		logger.Error("Failed to create note").Err(result.Error).Str("title", n.Title).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully created note").Uint("note_id", n.ID).Str("title", n.Title).Send()
+	json.NewEncoder(w).Encode(n)
+}
+
+func updateNote(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Updating note").Send()
+
+	id, ok := utils.ParseNoteID(r, w)
+	if !ok {
+		return
+	}
+
+	var n database.Note
+	err := json.NewDecoder(r.Body).Decode(&n)
+	if err != nil {
+		logger.Error("Failed to decode note update request").Err(err).Send()
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	result := database.DB.Model(&n).Where("id = ?", id).Updates(n)
+	if result.Error != nil {
+		logger.Error("Failed to update note").Uint("note_id", id).Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully updated note").Uint("note_id", id).Send()
+	w.WriteHeader(http.StatusOK)
+}
+
+func deleteNote(w http.ResponseWriter, r *http.Request) {
+	logger.Info("Deleting note").Send()
+
+	id, ok := utils.ParseNoteID(r, w)
+	if !ok {
+		return
+	}
+
+	result := database.DB.Delete(&database.Note{}, id)
+	if result.Error != nil {
+		logger.Error("Failed to delete note").Uint("note_id", id).Err(result.Error).Send()
+		http.Error(w, result.Error.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully deleted note").Uint("note_id", id).Send()
+	w.WriteHeader(http.StatusOK)
 }

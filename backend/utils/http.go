@@ -29,3 +29,8 @@ func ParseTaskID(r *http.Request, w http.ResponseWriter) (uint, bool) {
 func ParseProjectID(r *http.Request, w http.ResponseWriter) (uint, bool) {
 	return ParseIDFromURL(r, w, "projectID")
 }
+
+// ParseNoteID is a convenience function for parsing note IDs
+func ParseNoteID(r *http.Request, w http.ResponseWriter) (uint, bool) {
+	return ParseIDFromURL(r, w, "noteID")
+}
