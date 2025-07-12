@@ -176,7 +176,9 @@ class AppDatabase extends _$AppDatabase {
   );
 
   // Project methods
-  Future<List<project_model.Project>> get allProjects => select(projects).get();
+  Future<List<project_model.Project>> get allProjects =>
+      (select(projects)..orderBy([(p) => OrderingTerm(expression: p.order)]))
+          .get();
 
   ProjectsCompanion _projectToCompanion(project_model.Project project) {
     return ProjectsCompanion(
