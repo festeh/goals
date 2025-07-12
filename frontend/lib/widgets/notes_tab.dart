@@ -1,7 +1,6 @@
 import 'package:dimaist/models/note.dart';
 import 'package:dimaist/services/api_service.dart';
 import 'package:dimaist/services/app_database.dart';
-import 'package:dimaist/widgets/add_note_dialog.dart';
 import 'package:dimaist/widgets/edit_note_dialog.dart';
 import 'package:dimaist/widgets/note_widget.dart';
 import 'package:flutter/material.dart';
@@ -32,17 +31,11 @@ class _NotesTabState extends State<NotesTab> {
     }
   }
 
-  void _addNote() {
-    showDialog(
-      context: context,
-      builder: (context) => AddNoteDialog(
-        onSave: (note) async {
-          final newNote = await ApiService.createNote(note);
-          await _db.insertNote(newNote);
-          _loadNotes();
-        },
-      ),
-    );
+  void _addNote() async {
+    final newNote =
+        await ApiService.createNote(Note(title: "", content: ""));
+    await _db.insertNote(newNote);
+    _loadNotes();
   }
 
   void _editNote(Note note) {
