@@ -4,7 +4,7 @@ import 'package:dimaist/screens/wear_recording_screen.dart';
 import 'package:dimaist/services/api_service.dart';
 import 'package:dimaist/services/logging_service.dart';
 import 'package:flutter/material.dart';
-import 'package:dimaist/screens/wear_today_screen.dart';
+import 'package:dimaist/screens/wear_main_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,17 +34,21 @@ class WearApp extends StatelessWidget {
         switch (settings.name) {
           case '/':
             return MaterialPageRoute(
-                builder: (context) => const WearTodayScreen());
+              builder: (context) => const WearMainScreen(),
+            );
           case '/recording':
             return MaterialPageRoute(
-                builder: (context) => const WearRecordingScreen());
+              builder: (context) => const WearRecordingScreen(),
+            );
           case '/note':
             final note = settings.arguments as Note;
             return MaterialPageRoute(
-                builder: (context) => WearNoteScreen(note: note));
+              builder: (context) => WearNoteScreen(note: note),
+            );
           default:
             return MaterialPageRoute(
-                builder: (context) => const WearTodayScreen());
+              builder: (context) => const WearMainScreen(),
+            );
         }
       },
     );
