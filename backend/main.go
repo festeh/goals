@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"net/http"
 	"time"
@@ -20,6 +21,10 @@ import (
 var appEnv *env.Env
 
 func main() {
+	// Parse command line flags
+	port := flag.String("port", "3000", "Port to run the server on")
+	flag.Parse()
+
 	err := godotenv.Load()
 	if err != nil {
 		// We can't log this yet since logger isn't initialized
@@ -102,8 +107,8 @@ func main() {
 	// Sync route
 	r.Get("/sync", syncData)
 
-	logger.Info("Starting server on :3000").Send()
-	err = http.ListenAndServe(":3000", r)
+	logger.Info("Starting server").Str("port", *port).Send()
+	err = http.ListenAndServe(":"+*port, r)
 	if err != nil {
 		logger.Error("Server failed to start").Err(err).Send()
 	}
