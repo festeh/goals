@@ -13,19 +13,33 @@ class RecordingDialog extends StatefulWidget {
   State<RecordingDialog> createState() => _RecordingDialogState();
 }
 
-class _RecordingDialogState extends State<RecordingDialog> {
+class _RecordingDialogState extends State<RecordingDialog>
+    with SingleTickerProviderStateMixin {
   final AudioRecorder _recorder = AudioRecorder();
   bool _isRecording = false;
   String? _audioPath;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     _startRecording();
   }
 
   @override
   void dispose() {
+    _animationController.dispose();
     _recorder.dispose();
     super.dispose();
   }
@@ -96,7 +110,10 @@ class _RecordingDialogState extends State<RecordingDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_isRecording)
-            const CircularProgressIndicator()
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: const Icon(Icons.mic, size: 50),
+            )
           else
             const Text('Processing...'),
           const SizedBox(height: 20),
