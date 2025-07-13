@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Building audio-cli..."
-go build -o audio-cli .
+go build -o audiocli .
 
 if [ $? -eq 0 ]; then
     echo "✅ Build successful! Executable: ./audio-cli"
@@ -11,10 +11,10 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "Usage:"
     echo "  ./audio-cli --help                    # Show help"
-    echo "  ./audio-cli                          # Start recording (press SPACE to stop)"
+    echo "  ./audio-cli                          # Start recording (press any key to stop)"
     echo ""
     echo "Controls:"
-    echo "  - Press SPACE to stop recording and start transcription"
+    echo "  - Press ANY KEY to stop recording and start transcription"
     echo ""
     echo "Make sure to set ELEVENLABS_API_KEY environment variable before running."
 else

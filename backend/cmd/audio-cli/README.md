@@ -33,13 +33,13 @@ export ELEVENLABS_API_KEY=your_api_key_here
 # Show help
 ./audio-cli --help
 
-# Start recording (press SPACE to stop)
+# Start recording (press any key to stop)
 ./audio-cli
 ```
 
 ## Controls
 
-- **Press SPACE**: Stop recording and start transcription
+- **Press ANY KEY**: Stop recording and start transcription
 
 ## Audio Format
 
@@ -78,7 +78,7 @@ Set the API key: `export ELEVENLABS_API_KEY=your_api_key_here`
 ## Features
 
 - ✅ **Standalone**: No backend server required
-- ✅ **Simple controls**: Just press SPACE to stop recording
+- ✅ **Simple controls**: Just press any key to stop recording
 - ✅ **Direct API**: Calls ElevenLabs API directly
 - ✅ **Real-time**: Immediate transcription after recording
 - ✅ **Detailed output**: Language detection and word timestamps

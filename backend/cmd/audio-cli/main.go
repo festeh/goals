@@ -44,10 +44,10 @@ func main() {
 		flag.PrintDefaults()
 		fmt.Println()
 		fmt.Println("Examples:")
-		fmt.Println("  audio-cli                           # Record until space is pressed")
+		fmt.Println("  audio-cli                           # Record until any key is pressed")
 		fmt.Println()
 		fmt.Println("Controls:")
-		fmt.Println("  Press SPACE to stop recording and start transcription")
+		fmt.Println("  Press ANY KEY to stop recording and start transcription")
 		return
 	}
 
@@ -67,9 +67,9 @@ func main() {
 	}
 
 	fmt.Println("🎤 Audio Recording and Transcription Tool")
-	fmt.Println("Press SPACE to stop recording")
+	fmt.Println("Press ANY KEY to stop recording")
 	fmt.Println()
-	fmt.Println("🔴 Recording... (press SPACE to stop)")
+	fmt.Println("🔴 Recording... (press any key to stop)")
 
 	// Record audio
 	pcmData, err := recordAudio()
@@ -130,27 +130,21 @@ func recordAudio() ([]byte, error) {
 		return nil, fmt.Errorf("failed to start ffmpeg: %v", err)
 	}
 
-	// Wait for space key press
-	spacePressed := make(chan bool, 1)
+	// Wait for any key press
+	keyPressed := make(chan bool, 1)
 	
-	// Listen for space key in a separate goroutine
+	// Listen for any key in a separate goroutine
 	go func() {
 		reader := bufio.NewReader(os.Stdin)
-		for {
-			char, _, err := reader.ReadRune()
-			if err != nil {
-				continue
-			}
-			if char == ' ' {
-				spacePressed <- true
-				return
-			}
+		_, _, err := reader.ReadRune()
+		if err == nil {
+			keyPressed <- true
 		}
 	}()
 
-	// Wait for space key press
-	<-spacePressed
-	fmt.Println("\n🛑 Space pressed, stopping recording...")
+	// Wait for any key press
+	<-keyPressed
+	fmt.Println("\n🛑 Key pressed, stopping recording...")
 	
 	// Stop ffmpeg
 	err = cmd.Process.Kill()
