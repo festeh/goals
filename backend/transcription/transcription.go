@@ -28,16 +28,21 @@ type Word struct {
 
 // TranscribePCM transcribes PCM S16LE audio data using ElevenLabs API
 func TranscribePCM(pcmData []byte) (*ElevenLabsResponse, error) {
-	// Get ElevenLabs API key from environment
-	apiKey := os.Getenv("ELEVENLABS_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("ELEVENLABS_API_KEY environment variable is required")
-	}
-
 	// Convert PCM S16LE to WAV format
 	wavData, err := pcmToWav(pcmData, 16000, 1, 16)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert PCM to WAV: %v", err)
+	}
+
+	return TranscribeWAV(wavData)
+}
+
+// TranscribeWAV transcribes WAV audio data using ElevenLabs API
+func TranscribeWAV(wavData []byte) (*ElevenLabsResponse, error) {
+	// Get ElevenLabs API key from environment
+	apiKey := os.Getenv("ELEVENLABS_API_KEY")
+	if apiKey == "" {
+		return nil, fmt.Errorf("ELEVENLABS_API_KEY environment variable is required")
 	}
 
 	// Create multipart form data
@@ -45,7 +50,7 @@ func TranscribePCM(pcmData []byte) (*ElevenLabsResponse, error) {
 	writer := multipart.NewWriter(&buf)
 
 	// Add model_id field
-	err = writer.WriteField("model_id", "scribe_v1")
+	err := writer.WriteField("model_id", "scribe_v1")
 	if err != nil {
 		return nil, fmt.Errorf("failed to write model_id field: %v", err)
 	}
