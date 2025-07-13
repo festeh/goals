@@ -140,10 +140,5 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		Send()
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"note_id":  note.ID,
-		"audio_id": audio.ID,
-		"text":     result.Text,
-	})
+	json.NewEncoder(w).Encode(note)
 }
