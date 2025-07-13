@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/dima-b/go-task-backend/env"
 	"github.com/dima-b/go-task-backend/transcription"
 )
 
@@ -41,10 +42,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Check if ElevenLabs API key is set
-	if os.Getenv("ELEVENLABS_API_KEY") == "" {
-		fmt.Println("Error: ELEVENLABS_API_KEY environment variable is required")
-		fmt.Println("Set it with: export ELEVENLABS_API_KEY=your_api_key_here")
+	// Initialize environment configuration
+	appEnv, err := env.New()
+	if err != nil {
+		fmt.Printf("Error: Failed to initialize environment: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -64,7 +65,7 @@ func main() {
 	fmt.Println("📡 Transcribing audio...")
 
 	// Transcribe audio using shared function
-	result, err := transcription.TranscribePCM(pcmData)
+	result, err := transcription.TranscribePCM(pcmData, appEnv.ElevenLabsAPIKey)
 	if err != nil {
 		fmt.Printf("❌ Error transcribing audio: %v\n", err)
 		os.Exit(1)

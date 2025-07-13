@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dima-b/go-task-backend/database"
+	"github.com/dima-b/go-task-backend/env"
 	"github.com/dima-b/go-task-backend/logger"
 	"github.com/dima-b/go-task-backend/middleware"
 	"github.com/dima-b/go-task-backend/utils"
@@ -16,16 +17,26 @@ import (
 	"gorm.io/gorm"
 )
 
-func main() {
-	// Initialize logger first
-	logger.InitLogger()
+var appEnv *env.Env
 
+func main() {
 	err := godotenv.Load()
 	if err != nil {
-		logger.Warn("Error loading .env file, using environment variables").Err(err).Send()
+		// We can't log this yet since logger isn't initialized
+		fmt.Printf("Warning: Error loading .env file, using environment variables: %v\n", err)
 	}
 
-	err = database.InitDB()
+	// Initialize environment configuration
+	appEnv, err = env.New()
+	if err != nil {
+		fmt.Printf("Error: Failed to initialize environment: %v\n", err)
+		return
+	}
+
+	// Initialize logger with env config
+	logger.InitLogger(appEnv.LogLevel, appEnv.LogFormat)
+
+	err = database.InitDB(appEnv.DatabaseURL)
 	if err != nil {
 		logger.Error("Unable to connect to database").Err(err).Send()
 		return

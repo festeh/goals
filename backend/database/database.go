@@ -1,25 +1,19 @@
 package database
 
 import (
-	"os"
-	"time"
+	"github.com/dima-b/go-task-backend/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"github.com/dima-b/go-task-backend/logger"
+	"time"
 )
 
 var DB *gorm.DB
 
-func InitDB() error {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		logger.Error("DATABASE_URL environment variable is not set").Send()
-		panic("DATABASE_URL environment variable is not set")
-	}
-	
+func InitDB(databaseURL string) error {
+
 	logger.Info("Connecting to database").Send()
 	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+	DB, err = gorm.Open(postgres.Open(databaseURL), &gorm.Config{
 		PrepareStmt: false,
 	})
 	if err != nil {
@@ -33,11 +27,11 @@ func InitDB() error {
 		logger.Error("Failed to get underlying sql.DB").Err(err).Send()
 		return err
 	}
-	
+
 	// Set connection pool settings to refresh connections regularly
 	sqlDB.SetMaxOpenConns(25)
 	sqlDB.SetMaxIdleConns(5)
-	sqlDB.SetConnMaxLifetime(5 * time.Minute) // 5 minutes
+	sqlDB.SetConnMaxLifetime(5 * time.Minute)  // 5 minutes
 	sqlDB.SetConnMaxIdleTime(30 * time.Second) // 30 seconds
 
 	logger.Info("Database connected successfully").Send()

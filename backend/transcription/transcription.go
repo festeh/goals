@@ -8,7 +8,6 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -27,23 +26,18 @@ type Word struct {
 }
 
 // TranscribePCM transcribes PCM S16LE audio data using ElevenLabs API
-func TranscribePCM(pcmData []byte) (*ElevenLabsResponse, error) {
+func TranscribePCM(pcmData []byte, apiKey string) (*ElevenLabsResponse, error) {
 	// Convert PCM S16LE to WAV format
 	wavData, err := pcmToWav(pcmData, 16000, 1, 16)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert PCM to WAV: %v", err)
 	}
 
-	return TranscribeWAV(wavData)
+	return TranscribeWAV(wavData, apiKey)
 }
 
 // TranscribeWAV transcribes WAV audio data using ElevenLabs API
-func TranscribeWAV(wavData []byte) (*ElevenLabsResponse, error) {
-	// Get ElevenLabs API key from environment
-	apiKey := os.Getenv("ELEVENLABS_API_KEY")
-	if apiKey == "" {
-		return nil, fmt.Errorf("ELEVENLABS_API_KEY environment variable is required")
-	}
+func TranscribeWAV(wavData []byte, apiKey string) (*ElevenLabsResponse, error) {
 
 	// Create multipart form data
 	var buf bytes.Buffer

@@ -13,9 +13,9 @@ import (
 var Logger zerolog.Logger
 
 // InitLogger initializes the global logger with configuration
-func InitLogger() {
-	// Set log level from environment variable, default to info
-	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
+func InitLogger(logLevel, logFormat string) {
+	// Set log level from parameter, default to info
+	logLevel = strings.ToLower(logLevel)
 	var level zerolog.Level
 	
 	switch logLevel {
@@ -32,7 +32,7 @@ func InitLogger() {
 	}
 
 	// Configure output format
-	if os.Getenv("LOG_FORMAT") == "json" {
+	if logFormat == "json" {
 		// JSON format for production
 		Logger = zerolog.New(os.Stdout).
 			Level(level).

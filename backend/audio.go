@@ -38,7 +38,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Use shared transcription function for PCM
-		result, err := transcription.TranscribePCM(req.PCMData)
+		result, err := transcription.TranscribePCM(req.PCMData, appEnv.ElevenLabsAPIKey)
 		if err != nil {
 			logger.Error("Failed to transcribe audio").Err(err).Send()
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -110,7 +110,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		Send()
 
 	// Use shared transcription function for WAV
-	result, err := transcription.TranscribeWAV(wavData)
+	result, err := transcription.TranscribeWAV(wavData, appEnv.ElevenLabsAPIKey)
 	if err != nil {
 		logger.Error("Failed to transcribe audio").Err(err).Send()
 		http.Error(w, err.Error(), http.StatusInternalServerError)
