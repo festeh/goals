@@ -34,7 +34,13 @@ class _RecordingDialogState extends State<RecordingDialog> {
     final hasPermission = await _requestPermissions();
     if (hasPermission) {
       const encoder = AudioEncoder.wav;
-      const config = RecordConfig(encoder: encoder, numChannels: 1);
+      const config = RecordConfig(
+        encoder: encoder,
+        numChannels: 1,
+        sampleRate: 16000,
+        bitRate: 256000,
+        noiseSuppress: true,
+      );
       final path = '${Directory.systemTemp.path}/temp.wav';
       await _recorder.start(config, path: path);
       setState(() {
@@ -48,6 +54,9 @@ class _RecordingDialogState extends State<RecordingDialog> {
   }
 
   Future<bool> _requestPermissions() async {
+    if (Platform.isLinux) {
+      return true;
+    }
     var status = await Permission.microphone.request();
     return status.isGranted;
   }
