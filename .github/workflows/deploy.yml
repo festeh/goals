@@ -1,0 +1,49 @@
+name: Build and Deploy Go Backend
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  APP_NAME: dimaist
+  DEPLOY_PATH: /opt/dimaist
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.24.0'
+    
+    - name: Build Go backend
+      run: |
+        cd backend
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ${{ env.APP_NAME }} .
+    
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+    
+    - name: Deploy binary to remote host
+      run: |
+        scp backend/${{ env.APP_NAME }} root@${{ env.HOST }}:${{ env.DEPLOY_PATH }}/
+    
+    - name: Deploy environment variables
+      run: |
+        echo "${{ secrets.ENV_FILE }}" > .env
+        scp .env root@${{ env.HOST }}:${{ env.DEPLOY_PATH }}/
+        rm .env
+    
+    # - name: Restart service
+    #   run: |
+    #     ssh root@${{ env.HOST }} "cd ${{ env.DEPLOY_PATH }} && systemctl restart ${{ env.APP_NAME }}"
