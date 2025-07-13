@@ -52,6 +52,13 @@ class _WearTodayScreenState extends State<WearTodayScreen> {
           );
         },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.pushNamed(context, '/recording');
+        },
+        child: const Icon(Icons.mic),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }
