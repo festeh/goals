@@ -1,9 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:versionCode="1"
+    android:versionName="1.0">
     <uses-feature android:name="android.hardware.type.watch" />
     <application
         android:label="dimaist_wear"
-        android:name="${applicationName}">
+        android:name="${applicationName}"
+        tools:replace="android:label">
         <meta-data
             android:name="com.google.android.wearable.standalone"
             android:value="true" />
