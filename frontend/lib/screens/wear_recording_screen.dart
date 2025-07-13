@@ -116,11 +116,12 @@ class _WearRecordingScreenState extends State<WearRecordingScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Center(
-        child: SingleChildScrollView(
+      body: SafeArea(
+        child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Spacer(flex: 2),
               if (_isRecording)
                 ScaleTransition(
                   scale: _scaleAnimation,
@@ -139,7 +140,7 @@ class _WearRecordingScreenState extends State<WearRecordingScreen>
                         : 'Done',
                 style: const TextStyle(color: Colors.white),
               ),
-              const SizedBox(height: 40),
+              const Spacer(),
               SizedBox(
                 width: 100,
                 height: 100,
@@ -152,6 +153,7 @@ class _WearRecordingScreenState extends State<WearRecordingScreen>
                   child: const Icon(Icons.stop, size: 50),
                 ),
               ),
+              const Spacer(flex: 2),
             ],
           ),
         ),

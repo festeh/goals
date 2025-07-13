@@ -9,31 +9,32 @@ class WearNoteScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      // title: Text(
-      //   note.title.isEmpty ? "Note" : note.title,
-      //   overflow: TextOverflow.ellipsis,
-      // ),
-      // backgroundColor: Colors.black,
-      // ),
       backgroundColor: Colors.black,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (note.title.isNotEmpty)
-              Text(
-                note.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (note.title.isNotEmpty)
+                Text(
+                  note.title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+              if (note.title.isNotEmpty) const SizedBox(height: 8),
+              Text(
+                note.content,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
               ),
-            if (note.title.isNotEmpty) const SizedBox(height: 16),
-            Text(note.content, style: const TextStyle(color: Colors.white)),
-          ],
+            ],
+          ),
         ),
       ),
     );
