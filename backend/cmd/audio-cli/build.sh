@@ -16,7 +16,7 @@ if [ $? -eq 0 ]; then
     echo "Controls:"
     echo "  - Press ANY KEY to stop recording and start transcription"
     echo ""
-    echo "Make sure to set ELEVENLABS_API_KEY environment variable before running."
+    echo "Standalone tool - no backend server required!"
 else
     echo "❌ Build failed"
     exit 1

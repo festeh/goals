@@ -1,6 +1,6 @@
 # Audio Recording and Transcription CLI
 
-A standalone command-line tool that records audio and transcribes it directly using the ElevenLabs Speech-to-Text API.
+A standalone command-line tool that records audio and transcribes it using the same ElevenLabs Speech-to-Text logic as the backend server.
 
 ## Prerequisites
 
@@ -48,7 +48,7 @@ The tool records audio in the following format:
 - **Channels**: 1 (mono)
 - **Format**: PCM S16LE (16-bit signed little-endian)
 
-This format is automatically converted to WAV and sent directly to the ElevenLabs API.
+This format is automatically converted to WAV and sent directly to the ElevenLabs API using shared transcription logic.
 
 ## Output
 
@@ -77,8 +77,9 @@ Set the API key: `export ELEVENLABS_API_KEY=your_api_key_here`
 
 ## Features
 
-- ✅ **Standalone**: No backend server required
+- ✅ **Standalone**: No backend server required, works independently  
+- ✅ **Shared logic**: Uses exact same transcription code as backend server
 - ✅ **Simple controls**: Just press any key to stop recording
-- ✅ **Direct API**: Calls ElevenLabs API directly
+- ✅ **Clean architecture**: No code duplication between CLI and backend
 - ✅ **Real-time**: Immediate transcription after recording
 - ✅ **Detailed output**: Language detection and word timestamps
