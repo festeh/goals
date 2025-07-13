@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -91,9 +92,12 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save compressed audio to database
+	// Encode compressed audio to base64
+	base64Data := base64.StdEncoding.EncodeToString(compressedData)
+
+	// Save base64 encoded audio to database
 	audio := database.Audio{
-		Data: compressedData,
+		Data: base64Data,
 	}
 
 	dbResult := database.DB.Create(&audio)
@@ -107,6 +111,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		Uint("audio_id", audio.ID).
 		Int("original_size", len(wavData)).
 		Int("compressed_size", len(compressedData)).
+		Int("base64_size", len(base64Data)).
 		Send()
 
 	// Use shared transcription function for WAV

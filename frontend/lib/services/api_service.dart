@@ -9,7 +9,8 @@ import 'app_database.dart';
 import 'logging_service.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:3000';
+  static const String baseUrl =
+      String.fromEnvironment('BASE_URL', defaultValue: 'http://localhost:3000');
   static final _logger = LoggingService.logger;
   static final AppDatabase _db = AppDatabase();
 

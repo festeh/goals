@@ -76,6 +76,6 @@ type Note struct {
 
 type Audio struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
-	Data      []byte    `gorm:"not null" json:"data"`
+	Data      string    `gorm:"type:text;not null" json:"data"`
 	CreatedAt time.Time `json:"created_at"`
 }
