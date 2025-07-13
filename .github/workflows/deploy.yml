@@ -36,12 +36,12 @@ jobs:
     
     - name: Deploy binary to remote host
       run: |
-        scp backend/${{ env.APP_NAME }} root@${{ secrets.HOST }}:${{ env.DEPLOY_PATH }}/
+        scp backend/${{ env.APP_NAME }} root@${{ secrets.HOST }}:${{ env.DEPLOY_PATH }}
     
     - name: Deploy environment variables
       run: |
         echo "${{ secrets.ENV_FILE }}" > .env
-        scp .env root@${{ secrets.HOST }}:${{ env.DEPLOY_PATH }}
+        scp .env root@${{ secrets.HOST }}:/opt/.env
         rm .env
     
     # - name: Restart service
