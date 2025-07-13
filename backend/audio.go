@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/dima-b/go-task-backend/compression"
+	"github.com/dima-b/go-task-backend/database"
 	"github.com/dima-b/go-task-backend/logger"
 	"github.com/dima-b/go-task-backend/transcription"
 )
@@ -80,6 +82,32 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "audio file is empty", http.StatusBadRequest)
 		return
 	}
+
+	// Compress the audio data
+	compressedData, err := compression.CompressAudio(wavData)
+	if err != nil {
+		logger.Error("Failed to compress audio").Err(err).Send()
+		http.Error(w, "Failed to compress audio", http.StatusInternalServerError)
+		return
+	}
+
+	// Save compressed audio to database
+	audio := database.Audio{
+		Data: compressedData,
+	}
+	
+	dbResult := database.DB.Create(&audio)
+	if dbResult.Error != nil {
+		logger.Error("Failed to save audio to database").Err(dbResult.Error).Send()
+		http.Error(w, "Failed to save audio", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully saved compressed audio to database").
+		Uint("audio_id", audio.ID).
+		Int("original_size", len(wavData)).
+		Int("compressed_size", len(compressedData)).
+		Send()
 
 	// Use shared transcription function for WAV
 	result, err := transcription.TranscribeWAV(wavData)

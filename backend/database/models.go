@@ -72,3 +72,9 @@ type Note struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
+
+type Audio struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Data      []byte    `gorm:"not null" json:"data"`
+	CreatedAt time.Time `json:"created_at"`
+}
