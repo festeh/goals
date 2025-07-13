@@ -117,41 +117,43 @@ class _WearRecordingScreenState extends State<WearRecordingScreen>
     return Scaffold(
       backgroundColor: Colors.black,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_isRecording)
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: const Icon(Icons.mic, size: 50, color: Colors.red),
-              )
-            else if (_isProcessing)
-              const CircularProgressIndicator()
-            else
-              const SizedBox.shrink(),
-            const SizedBox(height: 20),
-            Text(
-              _isRecording
-                  ? 'Recording...'
-                  : _isProcessing
-                      ? 'Processing...'
-                      : 'Done',
-              style: const TextStyle(color: Colors.white),
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: 100,
-              height: 100,
-              child: ElevatedButton(
-                onPressed: _isRecording ? _stopRecording : null,
-                style: ElevatedButton.styleFrom(
-                  shape: const CircleBorder(),
-                  backgroundColor: Colors.red,
-                ),
-                child: const Icon(Icons.stop, size: 50),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (_isRecording)
+                ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: const Icon(Icons.mic, size: 50, color: Colors.red),
+                )
+              else if (_isProcessing)
+                const CircularProgressIndicator()
+              else
+                const SizedBox.shrink(),
+              const SizedBox(height: 20),
+              Text(
+                _isRecording
+                    ? 'Recording...'
+                    : _isProcessing
+                        ? 'Processing...'
+                        : 'Done',
+                style: const TextStyle(color: Colors.white),
               ),
-            ),
-          ],
+              const SizedBox(height: 40),
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: ElevatedButton(
+                  onPressed: _isRecording ? _stopRecording : null,
+                  style: ElevatedButton.styleFrom(
+                    shape: const CircleBorder(),
+                    backgroundColor: Colors.red,
+                  ),
+                  child: const Icon(Icons.stop, size: 50),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
