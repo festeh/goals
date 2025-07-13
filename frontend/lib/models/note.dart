@@ -40,4 +40,22 @@ class Note {
           : null,
     );
   }
+
+  Note copyWith({
+    int? id,
+    String? title,
+    String? content,
+    int? audioId,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Note(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      audioId: audioId ?? this.audioId,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
