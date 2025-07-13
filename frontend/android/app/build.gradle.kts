@@ -20,6 +20,7 @@ android {
     }
 
     defaultConfig {
+        minSdk = 25
         flavorDimensions += "appType"
         productFlavors {
             create("phone") {
