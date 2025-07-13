@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dimaist/services/api_service.dart';
+import 'package:dimaist/services/app_database.dart';
+import 'package:dimaist/utils/events.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,7 +18,9 @@ class RecordingDialog extends StatefulWidget {
 class _RecordingDialogState extends State<RecordingDialog>
     with SingleTickerProviderStateMixin {
   final AudioRecorder _recorder = AudioRecorder();
+  final AppDatabase _db = AppDatabase();
   bool _isRecording = false;
+  bool _isProcessing = false;
   String? _audioPath;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -26,7 +30,7 @@ class _RecordingDialogState extends State<RecordingDialog>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 500),
     )..repeat(reverse: true);
     _scaleAnimation = Tween<double>(begin: 0.9, end: 1.1).animate(
       CurvedAnimation(
@@ -79,13 +83,16 @@ class _RecordingDialogState extends State<RecordingDialog>
     final path = await _recorder.stop();
     setState(() {
       _isRecording = false;
+      _isProcessing = true;
       _audioPath = path;
     });
     if (_audioPath != null) {
       try {
         final file = File(_audioPath!);
         final bytes = await file.readAsBytes();
-        await ApiService.sendAudio(bytes);
+        final note = await ApiService.sendAudio(bytes);
+        await _db.upsertNote(note);
+        newNoteNotifier.value = note;
       } catch (e) {
         if (kDebugMode) {
           print('Error sending audio: $e');
@@ -105,7 +112,11 @@ class _RecordingDialogState extends State<RecordingDialog>
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Recording...'),
+      title: Text(_isRecording
+          ? 'Recording...'
+          : _isProcessing
+              ? 'Processing...'
+              : 'Done'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -114,8 +125,13 @@ class _RecordingDialogState extends State<RecordingDialog>
               scale: _scaleAnimation,
               child: const Icon(Icons.mic, size: 50),
             )
+          else if (_isProcessing)
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: const Icon(Icons.hourglass_empty, size: 50),
+            )
           else
-            const Text('Processing...'),
+            const SizedBox.shrink(),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: _isRecording ? _stopRecording : null,

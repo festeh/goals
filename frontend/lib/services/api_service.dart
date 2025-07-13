@@ -274,7 +274,7 @@ class ApiService {
     }
   }
 
-  static Future<void> sendAudio(List<int> audioBytes) async {
+  static Future<Note> sendAudio(List<int> audioBytes) async {
     _logger.info('Sending audio...');
     try {
       var request = http.MultipartRequest(
@@ -291,6 +291,8 @@ class ApiService {
       final response = await request.send();
       if (response.statusCode == 200) {
         _logger.info('Audio sent successfully.');
+        final responseBody = await response.stream.bytesToString();
+        return Note.fromJson(json.decode(responseBody));
       } else {
         _logger.warning('Failed to send audio: ${response.statusCode}');
         throw Exception('Failed to send audio');

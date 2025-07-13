@@ -1,4 +1,5 @@
 import 'package:dimaist/models/note.dart';
+import 'package:dimaist/utils/events.dart';
 import 'package:dimaist/widgets/left_bar.dart';
 import 'package:dimaist/widgets/note_detail_view.dart';
 import 'package:flutter/material.dart';
@@ -95,11 +96,20 @@ class _MainScreenState extends State<MainScreen> {
   void initState() {
     super.initState();
     _loadInitialData();
+    newNoteNotifier.addListener(_onNewNote);
   }
 
   @override
   void dispose() {
+    newNoteNotifier.removeListener(_onNewNote);
     super.dispose();
+  }
+
+  void _onNewNote() {
+    if (newNoteNotifier.value != null) {
+      _setSelectedNote(newNoteNotifier.value!);
+      newNoteNotifier.value = null; // Reset notifier
+    }
   }
 
   void _showErrorDialog(String error) {

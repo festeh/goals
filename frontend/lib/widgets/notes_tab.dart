@@ -36,8 +36,12 @@ class _NotesTabState extends State<NotesTab> {
   void _addNote() async {
     final now = DateTime.now();
     final formattedDate = DateFormat('HH:mm, dd MMM').format(now);
-    final newNote =
-        await ApiService.createNote(Note(title: formattedDate, content: ""));
+    final newNote = await ApiService.createNote(Note(
+      title: formattedDate,
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+    ));
     await _db.insertNote(newNote);
     _loadNotes();
   }

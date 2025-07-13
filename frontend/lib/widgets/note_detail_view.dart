@@ -83,6 +83,8 @@ class _NoteDetailViewState extends State<NoteDetailView> {
                     id: widget.note.id,
                     title: _titleController.text,
                     content: _contentController.text,
+                    createdAt: widget.note.createdAt ?? DateTime.now(),
+                    updatedAt: DateTime.now(),
                   );
                   widget.onSave(updatedNote);
                 }

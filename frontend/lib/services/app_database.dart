@@ -147,6 +147,9 @@ class Notes extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get title => text()();
   TextColumn get content => text()();
+  IntColumn get audioId => integer().nullable()();
+  DateTimeColumn get createdAt => dateTime().nullable()();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
 }
 
 @DriftDatabase(tables: [Projects, Tasks, Notes])
@@ -161,19 +164,28 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (m) async {
-      await m.createAll();
-    },
-    onUpgrade: (m, from, to) async {
-      if (from == 1) {
-        await m.createTable(notes);
-      }
-    },
-  );
+        onCreate: (m) async {
+          await m.createAll();
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 3) {
+            await m.createTable(notes);
+            await m.addColumn(notes, notes.audioId);
+            await m.addColumn(notes, notes.createdAt);
+            await m.addColumn(notes, notes.updatedAt);
+          }
+          if (from == 3) {
+            // Migration from 3 to 4, id is now auto-increment
+          }
+          if (from == 4) {
+            // Migration from 4 to 5, createdAt and updatedAt are now nullable
+          }
+        },
+      );
 
   // Project methods
   Future<List<project_model.Project>> get allProjects =>
@@ -287,17 +299,31 @@ class AppDatabase extends _$AppDatabase {
   // Note methods
   Future<List<note_model.Note>> get allNotes => select(notes).get();
 
-  Future<void> insertNote(note_model.Note note) => into(
-    notes,
-  ).insert(NotesCompanion.insert(title: note.title, content: note.content));
+  NotesCompanion _noteToCompanion(note_model.Note note) {
+    return NotesCompanion(
+      id: note.id != null ? Value(note.id!) : const Value.absent(),
+      title: Value(note.title),
+      content: Value(note.content),
+      audioId: Value(note.audioId),
+      createdAt: Value(note.createdAt),
+      updatedAt: Value(note.updatedAt),
+    );
+  }
+
+  Future<void> insertNote(note_model.Note note) =>
+      into(notes).insert(_noteToCompanion(note));
 
   Future<void> updateNote(note_model.Note note) =>
       (update(notes)..where((n) => n.id.equals(note.id!))).write(
-        NotesCompanion(title: Value(note.title), content: Value(note.content)),
+        _noteToCompanion(note),
       );
 
   Future<void> deleteNote(int id) =>
       (delete(notes)..where((n) => n.id.equals(id))).go();
+
+  Future<void> upsertNote(note_model.Note note) async {
+    await into(notes).insertOnConflictUpdate(_noteToCompanion(note));
+  }
 
   Future<void> clearDatabase() async {
     await transaction(() async {
