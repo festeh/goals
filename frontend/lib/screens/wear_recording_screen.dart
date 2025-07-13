@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:dimaist/models/note.dart';
 import 'package:dimaist/services/api_service.dart';
-import 'package:dimaist/services/app_database.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -18,7 +17,6 @@ class WearRecordingScreen extends StatefulWidget {
 class _WearRecordingScreenState extends State<WearRecordingScreen>
     with SingleTickerProviderStateMixin {
   final AudioRecorder _recorder = AudioRecorder();
-  final AppDatabase _db = AppDatabase();
   bool _isRecording = false;
   bool _isProcessing = false;
   String? _audioPath;
@@ -93,7 +91,6 @@ class _WearRecordingScreenState extends State<WearRecordingScreen>
         final file = File(_audioPath!);
         final bytes = await file.readAsBytes();
         final Note note = await ApiService.sendAudio(bytes);
-        await _db.upsertNote(note);
         if (mounted) {
           Navigator.of(context).pushReplacementNamed('/note', arguments: note);
         }
