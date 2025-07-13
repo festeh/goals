@@ -20,7 +20,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 
 	// Check if it's multipart form data (frontend) or JSON (CLI via backend)
 	contentType := r.Header.Get("Content-Type")
-	
+
 	if contentType == "application/json" {
 		// Handle JSON request (for backward compatibility)
 		var req AudioTranscriptionRequest
@@ -46,7 +46,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 		}
 
 		logger.Info("Successfully transcribed audio").Str("text", result.Text).Send()
-		
+
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(result)
 		return
@@ -95,7 +95,7 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 	audio := database.Audio{
 		Data: compressedData,
 	}
-	
+
 	dbResult := database.DB.Create(&audio)
 	if dbResult.Error != nil {
 		logger.Error("Failed to save audio to database").Err(dbResult.Error).Send()
@@ -118,7 +118,32 @@ func transcribeAudio(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Info("Successfully transcribed audio").Str("text", result.Text).Send()
-	
+
+	// Create a new note with the transcribed text and audio reference
+	note := database.Note{
+		Title:   result.Text,
+		Content: "",
+		AudioID: &audio.ID,
+	}
+
+	noteResult := database.DB.Create(&note)
+	if noteResult.Error != nil {
+		logger.Error("Failed to create note").Err(noteResult.Error).Send()
+		http.Error(w, "Failed to create note", http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info("Successfully created note").
+		Uint("note_id", note.ID).
+		Uint("audio_id", audio.ID).
+		Str("transcribed_text", result.Text).
+		Send()
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"note_id":  note.ID,
+		"audio_id": audio.ID,
+		"text":     result.Text,
+	})
 }

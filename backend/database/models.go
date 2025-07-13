@@ -69,6 +69,7 @@ type Note struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Title     string    `gorm:"not null" json:"title"`
 	Content   string    `json:"content"`
+	AudioID   *uint     `gorm:"index" json:"audio_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
