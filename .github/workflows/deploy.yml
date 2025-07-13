@@ -41,7 +41,7 @@ jobs:
     - name: Deploy environment variables
       run: |
         echo "${{ secrets.ENV_FILE }}" > .env
-        scp .env root@${{ secrets.HOST }}:${{ env.DEPLOY_PATH }}/
+        scp .env root@${{ secrets.HOST }}:${{ env.DEPLOY_PATH }}
         rm .env
     
     # - name: Restart service
