@@ -37,7 +37,7 @@ type ToolCall struct {
 
 func NewAgent(apiKey, context, initialPrompt string, tools []Tool) *Agent {
 	client := openrouter.NewClient(apiKey)
-	
+
 	return &Agent{
 		client:        client,
 		context:       context,
@@ -109,13 +109,13 @@ func (a *Agent) Execute(userInput string) (string, error) {
 func (a *Agent) buildSystemPrompt() string {
 	var toolsDesc strings.Builder
 	toolsDesc.WriteString("Available tools:\n")
-	
+
 	for _, tool := range a.tools {
 		toolsDesc.WriteString(fmt.Sprintf("- %s: %s\n", tool.Name, tool.Description))
 	}
-	
+
 	toolsDesc.WriteString("\nTo use a tool, respond with: TOOL_CALL: {\"name\": \"tool_name\", \"arguments\": {\"arg1\": \"value1\"}}\n")
-	
+
 	return fmt.Sprintf(`%s
 
 Context: %s
@@ -130,20 +130,20 @@ Instructions:
 }
 
 func (a *Agent) callModel(messages []Message) (string, error) {
-	request := openrouter.CompletionRequest{
+	request := openrouter.ChatCompletionRequest{
 		Model:       a.model,
 		MaxTokens:   1000,
 		Temperature: 0.7,
 	}
 
 	for _, msg := range messages {
-		request.Messages = append(request.Messages, openrouter.Message{
+		request.Messages = append(request.Messages, openrouter.ChatCompletionMessage{
 			Role:    msg.Role,
-			Content: msg.Content,
+			Content: openrouter.Content{Text: msg.Content},
 		})
 	}
 
-	response, err := a.client.CreateCompletion(context.Background(), request)
+	response, err := a.client.CreateChatCompletion(context.Background(), request)
 	if err != nil {
 		return "", err
 	}
@@ -152,12 +152,12 @@ func (a *Agent) callModel(messages []Message) (string, error) {
 		return "", fmt.Errorf("no choices in response")
 	}
 
-	return response.Choices[0].Message.Content, nil
+	return response.Choices[0].Message.Content.Text, nil
 }
 
 func (a *Agent) parseToolCall(response string) (ToolCall, bool) {
 	const toolCallPrefix = "TOOL_CALL: "
-	
+
 	if !strings.Contains(response, toolCallPrefix) {
 		return ToolCall{}, false
 	}
@@ -168,7 +168,7 @@ func (a *Agent) parseToolCall(response string) (ToolCall, bool) {
 	}
 
 	jsonStr := response[start+len(toolCallPrefix):]
-	
+
 	lines := strings.Split(jsonStr, "\n")
 	if len(lines) > 0 {
 		jsonStr = lines[0]
@@ -189,7 +189,7 @@ func (a *Agent) executeTool(toolCall ToolCall) (string, error) {
 			return tool.Function(toolCall.Arguments)
 		}
 	}
-	
+
 	return "", fmt.Errorf("tool not found: %s", toolCall.Name)
 }
 
